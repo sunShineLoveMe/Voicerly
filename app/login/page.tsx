@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { AuthForm } from "@/components/auth-form"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function LoginPage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
   const router = useRouter()
 
   const handleLogin = (data: { email: string; password: string }) => {

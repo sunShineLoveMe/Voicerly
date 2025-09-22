@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { HeroSection } from "@/components/hero-section"
 import { Footer } from "@/components/footer"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function HomePage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
 
   return (
     <div className="min-h-screen bg-background">

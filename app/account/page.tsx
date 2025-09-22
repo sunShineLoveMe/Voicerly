@@ -7,9 +7,10 @@ import { Footer } from "@/components/footer"
 import { AccountOverview } from "@/components/account-overview"
 import { UsageHistory } from "@/components/usage-history"
 import { AccountSettings } from "@/components/account-settings"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function AccountPage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
 

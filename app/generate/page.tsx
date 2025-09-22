@@ -9,9 +9,10 @@ import { TargetTextInput } from "@/components/target-text-input"
 import { GenerationPanel } from "@/components/generation-panel"
 import { Badge } from "@/components/ui/badge"
 import { ConfigurationPanel } from "@/components/configuration-panel"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function GeneratePage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [promptText, setPromptText] = useState("")
   const [targetText, setTargetText] = useState("")

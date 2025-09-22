@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { FAQItem } from "@/components/faq-item"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function FAQPage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
 
   const content = {
     en: {

@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function PrivacyPage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
 
   const content = {
     en: {

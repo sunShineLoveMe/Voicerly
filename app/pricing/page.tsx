@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { PricingCard } from "@/components/pricing-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { Gift } from "lucide-react"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function PricingPage() {
-  const [language, setLanguage] = useState<"en" | "zh">("en")
+  const { language, setLanguage } = useLanguage()
 
   const content = {
     en: {
