@@ -1,0 +1,197 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Project Rules – Voicerly (Next.js + shadcn/ui)
+
+## 0) Product context
+- Product: Voicerly – AI voice generation for bloggers, podcasters, content creators.
+- Core flow: Home → Sign Up/Sign In → Voice Generation (upload prompt + target text + optional advanced settings) → Generate/Download.
+- Languages: EN / 中文 (bilingual labels shown together).
+- Billing: Credits (front-end shows balance/estimate; real deduction by backend).
+- Deploy target: Vercel (prefer Edge runtime unless Node-only deps).
+
+## 1) Tech stack & tooling (fixed)
+- Next.js 14 (App Router, TS strict), React 18.
+- TypeScript "strict": true.
+- TailwindCSS + PostCSS + Autoprefixer.
+- shadcn/ui (Radix UI). Only add used components.
+- Icons: lucide-react.
+- State: Zustand (auth/credits/UI flags).
+- Forms: React Hook Form + Zod (schema-first).
+- i18n: lightweight—static resources for EN/zh; same-screen bilingual labels (no locale routes).
+- Audio: native <audio> + small controlled player component.
+- Lint/Format: eslint (next + tailwind + import) + prettier.
+- Optional: Vercel Analytics, Sentry hooks.
+- File upload: react-dropzone (placeholder); real upload via signed URL later.
+- Payments (future): Stripe (@stripe/stripe-js) placeholder only on client.
+
+## 2) Scripts & setup (guidance)
+- Use create-next-app (App Router, TS, Tailwind).
+- Install shadcn/ui and only required components.
+- Add deps: zustand, zod, react-hook-form, lucide-react, clsx, tailwind-merge, react-dropzone, i18next, react-i18next, i18next-browser-languagedetector, @stripe/stripe-js.
+
+## 3) Architecture & folders (enforced)
+src/
+  app/
+    (marketing)/page.tsx                 # Home
+    generate/page.tsx                    # Voice Generation Dashboard
+    pricing/page.tsx
+    faq/page.tsx
+    legal/terms/page.tsx
+    legal/privacy/page.tsx
+    account/page.tsx
+    api/generate/route.ts                # proxy to TTS backend (mock ok)
+    api/credits/route.ts                 # get/update credits (mock ok)
+    api/upload/route.ts                  # signed upload url (mock ok)
+  components/
+    ui/                                  # shadcn components
+    common/                              # Header, Footer, LanguageToggle, CreditBadge
+    forms/                               # RHF primitives, Field, LabelRow
+    audio/                               # AudioPlayer, WaveformPlaceholder
+    generate/                            # UploadCard, TargetTextCard, AdvancedSettingsCard, OutputAudioCard, GenerateSection
+  lib/
+    i18n/index.ts                        # init i18n (lightweight)
+    i18n/resources.ts                    # EN/zh strings
+    validators/voice.ts                  # Zod schema for generate form
+    store/                               # zustand: authStore, creditStore, uiStore
+    utils/                               # helpers: cn, format, fetcher, bytes
+  styles/globals.css
+  types/index.ts
+public/ (favicons, og images)
+
+- Use Server Components by default; Client Components for interactive forms/widgets only (“use client”).
+- Naming: components PascalCase; hooks useXxx; stores xxxStore; utils camelCase.
+- Keep components focused; pages < 500 LOC; move logic to lib/store/utils.
+
+## 4) UI map → components (must match)
+Global:
+- Header: Logo “Voicerly”, Nav (Home / Voice Generation / Pricing / FAQ), EN/中文 toggle, Login/Sign Up.
+- Footer: compliance banner (no illegal/infringing use; user bears responsibility; label AI output where required).
+
+Home (/):
+- Hero: title “Voicerly”; subtitle “Turn your words into voice, instantly. / 让你的文字开口说话，随时随地”.
+- 3-step illustration: Upload → Enter text → Generate & Download.
+- CTA: “Start Free Trial – Get Free Credits”.
+
+Generate (/generate):
+Left column (single vertical flow):
+  - UploadCard: dropzone for mp3/wav/m4a ≤10MB; after upload show waveform player (play/pause, scrub, 0:00, Replace/Remove). Label:
+    “Prompt Speech (Optional, or let Voicerly improvise) / 参考音频（可选，或交给 Voicerly 自由演绎）”.
+  - TargetTextCard: textarea with counter; label “Target Text / 目标文本”.
+  - AdvancedSettingsCard (Accordion collapsed by default):
+      * Prompt Speech Enhancement / 参考音频增强 (Switch, off). Help: ZipEnhancer noise reduction.
+      * Prompt Text / 参考文本 (small textarea; transcript of uploaded prompt).
+      * CFG Value / CFG 值 (Slider 1–3, default 2; tip: higher=closer, lower=more creative).
+      * Inference Timesteps / 推理步数 (Slider 4–30, default 10; tip: higher=quality slower).
+      * Text Normalization / 文本标准化 (Switch, off).
+  - GenerateSection:
+      * Estimated usage text before submit: “Estimated usage: ~{X} credits / 预估约 {X} 积分”.
+      * Primary button: “Generate Voice / 生成语音”.
+      * Generating state: progress bar + disabled button “Generating… / 合成中…”.
+      * OutputAudioCard after success: player + “Download / 下载” + “Retry / 重新生成”.
+Right column:
+  - HowToUseCard (3 steps).
+  - ProTipsCard (3 bullets: enhancement/CFG/timesteps).
+Top-right credits pill visible: “Credits: {balance}”.
+
+Pricing (/pricing):
+- 3 plan cards: Starter (100), Pro (500), Enterprise (1000+).
+- Highlight: “New users get free trial credits / 新用户可获免费试用积分”.
+- Buttons: Buy Now / Contact Sales (link placeholders ok).
+
+FAQ (/faq):
+- Accordion Q&A: credits model, text length, languages, output format, voice authorization & restrictions.
+
+Legal (/legal/terms, /legal/privacy):
+- Terms include: prohibit illegal/infringing/deceptive/harmful use; “All generated content is the user’s responsibility / 生成内容的法律责任由用户承担”; label AI-generated content where required.
+
+Account (/account):
+- Credits balance, usage table (date, snippet, download), “Buy more credits”.
+
+## 5) Forms, state, API (contract)
+- Form: React Hook Form + Zod schema (`lib/validators/voice.ts`):
+  fields = { file?, targetText, enhance:boolean, promptText?, cfg:number, timesteps:number, normalize:boolean }.
+- Submit flow:
+  1) GET /api/credits → { balance }
+  2) If insufficient, show Dialog to go to /pricing.
+  3) POST /api/generate (JSON or multipart; mock allowed) → { audioUrl, usedCredits }
+  4) Update creditStore, render OutputAudioCard.
+- Zustand stores:
+  - creditStore: { balance:number } + setBalance/deduct
+  - uiStore: { isGenerating:boolean, showAdvanced:boolean }
+  - authStore: placeholder only.
+- Do not embed real TTS in client. Route handlers may proxy to backend later.
+
+## 6) i18n (lightweight)
+- Same-screen bilingual labels: “EN / 中文”.
+- Keep resource strings in `lib/i18n/resources.ts`.
+- LanguageToggle can flip UI priority (order) but content shows both languages where designed.
+
+## 7) Accessibility & UX (required)
+- All inputs have labels and aria-describedby where tooltips exist.
+- Switch/Slider keyboard operable.
+- Primary actions have loading/disabled states.
+- Maintain high contrast and readable typography (shadcn defaults).
+- Advanced Settings collapsed by default; core path remains 3 steps (Upload → Target Text → Generate).
+
+## 8) Performance (targets)
+- Prefer Server Components for static/marketing pages.
+- Lazy-load audio/waveform pieces.
+- Use next/image where appropriate; tree-shake icons.
+- Keep Lighthouse Performance/Accessibility ≥ 90 on marketing pages.
+
+## 9) Security & Compliance (front-end responsibilities)
+- Show compliance banner in footer and near download actions:
+  “Do not use for illegal or infringing purposes. All generated content is the user’s responsibility. / 禁止用于违法或侵权用途。生成内容的法律责任由用户自行承担。”
+- Do not expose secrets in client. Use route handlers/server actions for any sensitive calls.
+- Rate limiting is backend concern; add basic front-end debouncing on submit.
+- File uploads in prototype are placeholders; real app must use signed uploads (e.g., S3/R2).
+
+## 10) SEO
+- Define metadata (title/description) in App Router; OG image in /public.
+- Semantic headings H1/H2; avoid div-only layouts where semantics apply.
+- Copy concise, creator-oriented; avoid jargon.
+
+## 11) Deployment
+- Vercel target; Edge-friendly route handlers if possible (fallback to Node when needed).
+- Env vars: NEXT_PUBLIC_SITE_URL, TTS_API_BASE, STRIPE_PUBLISHABLE_KEY (client-safe).
+- Server secrets only in Vercel env (never in client).
+
+## 12) Acceptance Criteria (per page)
+Home
+- Hero headline/subtitle (bilingual), CTA visible, 3-step section, footer banner. Lighthouse A11y ≥ 90.
+
+Generate
+- Upload/replace/remove file; waveform player present after upload.
+- Target text with counter and validation.
+- Advanced settings accordion with all controls and bilingual tooltips.
+- Generate flow shows progress, outputs player + download/retry.
+- Credit estimate text before submit; mock credits integration ok.
+
+Pricing
+- Three plans with clear credits, “free trial credits” highlight, buttons link.
+
+FAQ
+- 5–8 Q&As including compliance/authorization.
+
+Legal
+- Terms & Privacy contain prohibitions, responsibility disclaimer, AI-label reminder (bilingual).
+
+Account
+- Credits balance, mock usage table, “Buy more credits”.
+
+## 13) Coding style (strict)
+- No unused vars; no eslint-disable; no any.
+- Component size < 500 LOC; split by feature; lift logic to lib/store/utils.
+- Tailwind classes organized and merged via cn(); avoid deeply nested class strings.
+- Keep imports ordered; avoid default exports for shared UI (prefer named).
+
+## 14) Task execution in Cursor (how to respond)
+- When asked to implement a page/component, first show: 
+  - intended files to create/modify, 
+  - brief plan (1–5 bullets),
+  - then output code.
+- Follow these rules even if user prompt is vague. Prefer minimal, production-ready code matching this spec.
+- Do not change tech stack or folder structure unless explicitly instructed.
