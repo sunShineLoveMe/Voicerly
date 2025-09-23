@@ -23,7 +23,7 @@ export default function GeneratePage() {
   const [cfgValue, setCfgValue] = useState(2)
   const [inferenceSteps, setInferenceSteps] = useState(10)
 
-  const canGenerate = uploadedFile && promptText.trim().length > 0 && targetText.trim().length > 0
+  const canGenerate = uploadedFile && (promptText?.trim().length ?? 0) > 0 && (targetText?.trim().length ?? 0) > 0
 
   const handleGenerate = () => {
     if (canGenerate && credits > 0) {
@@ -65,6 +65,7 @@ export default function GeneratePage() {
                 uploadedFile={uploadedFile}
                 speechEnhancement={speechEnhancement}
                 setSpeechEnhancement={setSpeechEnhancement}
+                onTranscriptionUpdate={setPromptText}
               />
 
               <TextInput
@@ -86,6 +87,13 @@ export default function GeneratePage() {
                 canGenerate={canGenerate}
                 credits={credits}
                 onGenerate={handleGenerate}
+                uploadedFile={uploadedFile}
+                promptText={promptText}
+                targetText={targetText}
+                cfgValue={cfgValue}
+                inferenceSteps={inferenceSteps}
+                textNormalization={textNormalization}
+                speechEnhancement={speechEnhancement}
               />
             </div>
 

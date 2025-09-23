@@ -4,20 +4,42 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Wand2, Download, Play, Pause, Loader2 } from "lucide-react"
+import { Wand2, Download, Play, Pause, Loader2, AlertCircle } from "lucide-react"
+import { generateVoice, type VoiceGenerationParams } from "@/lib/api-client"
 
 interface GenerationPanelProps {
   language: "en" | "zh"
   canGenerate: boolean
   credits: number
   onGenerate: () => void
+  // 新增API相关参数
+  uploadedFile?: File | null
+  promptText?: string
+  targetText?: string
+  cfgValue?: number
+  inferenceSteps?: number
+  textNormalization?: boolean
+  speechEnhancement?: boolean
 }
 
-export function GenerationPanel({ language, canGenerate, credits, onGenerate }: GenerationPanelProps) {
+export function GenerationPanel({ 
+  language, 
+  canGenerate, 
+  credits, 
+  onGenerate,
+  uploadedFile,
+  promptText,
+  targetText,
+  cfgValue = 2,
+  inferenceSteps = 10,
+  textNormalization = false,
+  speechEnhancement = false
+}: GenerationPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedAudio, setGeneratedAudio] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   const content = {
     en: {
@@ -28,6 +50,8 @@ export function GenerationPanel({ language, canGenerate, credits, onGenerate }: 
       playAudioLabel: "Play Audio",
       pauseAudioLabel: "Pause",
       processingSteps: ["Analyzing voice sample...", "Processing text...", "Generating audio...", "Finalizing..."],
+      errorTitle: "Generation Failed",
+      retryButton: "Retry Generation",
     },
     zh: {
       generateButton: "生成语音",
@@ -37,6 +61,8 @@ export function GenerationPanel({ language, canGenerate, credits, onGenerate }: 
       playAudioLabel: "播放音频",
       pauseAudioLabel: "暂停",
       processingSteps: ["分析语音样本...", "处理文本...", "生成音频...", "完成中..."],
+      errorTitle: "生成失败",
+      retryButton: "重新生成",
     },
   }
 
@@ -48,22 +74,54 @@ export function GenerationPanel({ language, canGenerate, credits, onGenerate }: 
     playAudioLabel,
     pauseAudioLabel,
     processingSteps,
+    errorTitle,
+    retryButton,
   } = content[language]
 
   const handleGenerate = async () => {
-    setIsGenerating(true)
-    setProgress(0)
-
-    // Simulate generation process
-    for (let i = 0; i < processingSteps.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setProgress(((i + 1) / processingSteps.length) * 100)
+    if (!targetText) {
+      setError(language === "en" ? "Target text is required" : "目标文本不能为空")
+      return
     }
 
-    // Simulate generated audio
-    setGeneratedAudio("/placeholder-audio.mp3")
-    setIsGenerating(false)
-    onGenerate()
+    setIsGenerating(true)
+    setProgress(0)
+    setError(null)
+    setGeneratedAudio(null)
+
+    try {
+      // 模拟进度更新
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90))
+      }, 500)
+
+      // 调用VoxCPM API
+      const params: VoiceGenerationParams = {
+        text_input: targetText,
+        prompt_wav_path_input: uploadedFile,
+        prompt_text_input: promptText || null,
+        cfg_value_input: cfgValue,
+        inference_timesteps_input: inferenceSteps,
+        do_normalize: textNormalization,
+        denoise: speechEnhancement
+      }
+
+      const result = await generateVoice(params)
+      
+      clearInterval(progressInterval)
+      setProgress(100)
+      
+      // 设置生成的音频路径
+      setGeneratedAudio(result.filepath)
+      setIsGenerating(false)
+      onGenerate()
+      
+    } catch (error) {
+      setIsGenerating(false)
+      setProgress(0)
+      setError(error instanceof Error ? error.message : "Unknown error occurred")
+      console.error('Voice generation failed:', error)
+    }
   }
 
   const togglePlayback = () => {
@@ -83,11 +141,34 @@ export function GenerationPanel({ language, canGenerate, credits, onGenerate }: 
 
   return (
     <div className="space-y-4">
-      {canGenerate && !isGenerating && !generatedAudio && (
+      {error && (
+        <Card className="bg-destructive/10 border-destructive/20">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-destructive" />
+              <div>
+                <p className="font-medium text-destructive text-sm">{errorTitle}</p>
+                <p className="text-sm text-destructive/80 mt-1">{error}</p>
+              </div>
+            </div>
+            <Button
+              onClick={handleGenerate}
+              disabled={!canGenerate || credits < 1}
+              size="sm"
+              variant="outline"
+              className="mt-3 w-full border-destructive/20 text-destructive hover:bg-destructive/10"
+            >
+              {retryButton}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {canGenerate && !isGenerating && !generatedAudio && !error && (
         <p className="text-xs text-muted-foreground text-center">{creditsUsed}</p>
       )}
 
-      {!isGenerating && !generatedAudio && (
+      {!isGenerating && !generatedAudio && !error && (
         <Button
           onClick={handleGenerate}
           disabled={!canGenerate || credits < 1}

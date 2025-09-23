@@ -23,6 +23,8 @@ export function Navigation({ language, onLanguageChange }: NavigationProps) {
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
+  console.log("language切换", language)
+
   useEffect(() => {
     // Check for logged in user
     const userData = localStorage.getItem("user")

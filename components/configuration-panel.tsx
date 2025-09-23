@@ -227,7 +227,11 @@ export function ConfigurationPanel({
         <CardContent className="p-6">
           <p className="text-xs text-muted-foreground mb-3">{textNormDescription}</p>
           <div className="flex items-center space-x-2">
-            <Checkbox id="text-normalization" checked={textNormalization} onCheckedChange={setTextNormalization} />
+            <Checkbox 
+              id="text-normalization" 
+              checked={textNormalization} 
+              onCheckedChange={(checked) => setTextNormalization(checked === true)} 
+            />
             <label
               htmlFor="text-normalization"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

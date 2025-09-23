@@ -6,7 +6,8 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload, X, RotateCcw } from "lucide-react"
+import { Upload, X, RotateCcw, Loader2, Type } from "lucide-react"
+import { recognizeVoice } from "@/lib/api-client"
 
 interface VoiceUploadProps {
   language: "en" | "zh"
@@ -14,6 +15,7 @@ interface VoiceUploadProps {
   uploadedFile: File | null
   speechEnhancement: boolean
   setSpeechEnhancement: (value: boolean) => void
+  onTranscriptionUpdate?: (text: string) => void
 }
 
 export function VoiceUpload({
@@ -22,8 +24,11 @@ export function VoiceUpload({
   uploadedFile,
   speechEnhancement,
   setSpeechEnhancement,
+  onTranscriptionUpdate,
 }: VoiceUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const content = {
@@ -38,6 +43,9 @@ export function VoiceUpload({
       remove: "Remove",
       enhancementLabel: "Prompt Speech Enhancement",
       enhancementDescription: "We use ZipEnhancer model to denoise the prompt audio.",
+      transcribeButton: "Auto-transcribe",
+      transcribing: "Transcribing...",
+      transcriptionError: "Transcription failed",
     },
     zh: {
       title: "上传语音样本（5–10秒）",
@@ -50,6 +58,9 @@ export function VoiceUpload({
       remove: "移除",
       enhancementLabel: "参考音频增强",
       enhancementDescription: "我们使用 ZipEnhancer 模型对参考音频进行降噪处理。",
+      transcribeButton: "自动转录",
+      transcribing: "转录中...",
+      transcriptionError: "转录失败",
     },
   }
 
@@ -64,6 +75,9 @@ export function VoiceUpload({
     remove,
     enhancementLabel,
     enhancementDescription,
+    transcribeButton,
+    transcribing,
+    transcriptionError: transcriptionErrorText,
   } = content[language]
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -100,8 +114,26 @@ export function VoiceUpload({
 
   const removeUploadedFile = () => {
     onFileUpload(null)
+    setTranscriptionError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
+    }
+  }
+
+  const handleTranscribe = async () => {
+    if (!uploadedFile || !onTranscriptionUpdate) return
+
+    setIsTranscribing(true)
+    setTranscriptionError(null)
+
+    try {
+      const result = await recognizeVoice(uploadedFile)
+      onTranscriptionUpdate(result.text)
+    } catch (error) {
+      setTranscriptionError(error instanceof Error ? error.message : transcriptionErrorText)
+      console.error('Voice recognition failed:', error)
+    } finally {
+      setIsTranscribing(false)
     }
   }
 
@@ -146,6 +178,21 @@ export function VoiceUpload({
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {onTranscriptionUpdate && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleTranscribe}
+                      disabled={isTranscribing}
+                    >
+                      {isTranscribing ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Type className="w-4 h-4 mr-1" />
+                      )}
+                      {isTranscribing ? transcribing : transcribeButton}
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                     <RotateCcw className="w-4 h-4 mr-1" />
                     {replace}
@@ -171,7 +218,11 @@ export function VoiceUpload({
         <div className="mt-6 pt-4 border-t border-border/50">
           <p className="text-xs text-muted-foreground mb-3">{enhancementDescription}</p>
           <div className="flex items-center space-x-2">
-            <Checkbox id="speech-enhancement" checked={speechEnhancement} onCheckedChange={setSpeechEnhancement} />
+            <Checkbox 
+              id="speech-enhancement" 
+              checked={speechEnhancement} 
+              onCheckedChange={(checked) => setSpeechEnhancement(checked === true)} 
+            />
             <label
               htmlFor="speech-enhancement"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
