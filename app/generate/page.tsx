@@ -14,8 +14,8 @@ import { useLanguage } from "@/hooks/use-language"
 export default function GeneratePage() {
   const { language, setLanguage } = useLanguage()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [promptText, setPromptText] = useState("")
-  const [targetText, setTargetText] = useState("")
+  const [promptText, setPromptText] = useState<string>("")
+  const [targetText, setTargetText] = useState<string>("")
   const [credits, setCredits] = useState(50)
 
   const [speechEnhancement, setSpeechEnhancement] = useState(true)
@@ -26,7 +26,11 @@ export default function GeneratePage() {
   // 添加生成音频的状态管理
   const [generatedAudio, setGeneratedAudio] = useState<string | null>(null)
 
-  const canGenerate = Boolean(uploadedFile && (promptText?.trim().length ?? 0) > 0 && (targetText?.trim().length ?? 0) > 0)
+  const canGenerate = Boolean(
+    uploadedFile && 
+    (typeof promptText === 'string' && promptText.trim().length > 0) && 
+    (typeof targetText === 'string' && targetText.trim().length > 0)
+  )
 
   const handleGenerate = () => {
     if (canGenerate && credits > 0) {

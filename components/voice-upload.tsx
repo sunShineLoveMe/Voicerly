@@ -387,7 +387,7 @@ export function VoiceUpload({
       console.log('Starting auto transcription for file:', file.name)
       const result = await recognizeVoice(file)
       console.log('Auto transcription result:', result)
-      onTranscriptionUpdate(result.text)
+      onTranscriptionUpdate(String(result.text || ""))
     } catch (error) {
       console.error('Auto voice recognition failed:', error)
       const errorMessage = error instanceof Error ? error.message : transcriptionErrorText

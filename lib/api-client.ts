@@ -102,7 +102,7 @@ export class VoxCPMClient {
       }
 
       return {
-        text: result.data
+        text: String(result.data || "")
       }
     } catch (error) {
       console.error('Voice recognition failed:', error)
