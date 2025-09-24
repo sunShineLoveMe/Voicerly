@@ -53,6 +53,12 @@ export class VoxCPMClient {
    */
   async generateVoice(params: VoiceGenerationParams): Promise<VoiceGenerationResponse> {
     try {
+      // 首先检查服务是否可用
+      const isHealthy = await this.checkHealth()
+      if (!isHealthy) {
+        throw new Error('VoxCPM服务不可用。请确保服务正在localhost:7860运行。')
+      }
+
       const client = await this.initClient()
       
       // 处理文件上传
@@ -61,6 +67,16 @@ export class VoxCPMClient {
         // 如果是File对象，需要转换为Gradio可以处理的格式
         processedAudioInput = params.prompt_wav_path_input
       }
+
+      console.log('Calling VoxCPM API with params:', {
+        text_input: params.text_input,
+        prompt_wav_path_input: processedAudioInput ? 'File uploaded' : null,
+        prompt_text_input: params.prompt_text_input,
+        cfg_value_input: params.cfg_value_input || 2.0,
+        inference_timesteps_input: params.inference_timesteps_input || 10,
+        do_normalize: params.do_normalize || false,
+        denoise: params.denoise || false
+      })
 
       const result = await client.predict('/generate', {
         text_input: params.text_input,
@@ -72,12 +88,18 @@ export class VoxCPMClient {
         denoise: params.denoise || false
       })
 
+      console.log('VoxCPM API result:', result)
+
       if (!result?.data) {
-        throw new Error('API返回数据格式错误')
+        throw new Error('API返回数据格式错误: ' + JSON.stringify(result))
       }
 
+      // 根据API文档，返回的应该是文件路径
+      const filepath = Array.isArray(result.data) ? result.data[0] : result.data
+      console.log('Generated audio filepath:', filepath)
+
       return {
-        filepath: result.data
+        filepath: filepath
       }
     } catch (error) {
       console.error('Voice generation failed:', error)

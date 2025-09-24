@@ -82,6 +82,13 @@ export function GenerationPanel({
     onAudioGenerated?.(null)
 
     try {
+      // 检查服务状态
+      console.log('Checking VoxCPM service health...')
+      const { checkVoxCPMHealth } = await import('@/lib/api-client')
+      const isHealthy = await checkVoxCPMHealth()
+      if (!isHealthy) {
+        throw new Error('VoxCPM服务未运行。请确保服务在localhost:7860端口启动。')
+      }
       // 模拟进度更新
       const progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90))
@@ -98,7 +105,13 @@ export function GenerationPanel({
         denoise: speechEnhancement
       }
 
+      console.log('Generation Panel - calling generateVoice with params:', {
+        ...params,
+        prompt_wav_path_input: uploadedFile ? `File: ${uploadedFile.name}` : null
+      })
+
       const result = await generateVoice(params)
+      console.log('Generation Panel - received result:', result)
       
       clearInterval(progressInterval)
       setProgress(100)

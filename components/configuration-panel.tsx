@@ -107,7 +107,7 @@ export function ConfigurationPanel({
   const handleDownload = () => {
     if (generatedAudio) {
       const a = document.createElement("a")
-      a.href = generatedAudio
+      a.href = `http://localhost:7860/file=${encodeURIComponent(generatedAudio)}`
       a.download = "generated-voice.mp3"
       document.body.appendChild(a)
       a.click()
@@ -280,8 +280,15 @@ export function ConfigurationPanel({
 
                 <audio
                   ref={audioRef}
-                  src={generatedAudio || ""}
+                  src={generatedAudio ? `http://localhost:7860/file=${encodeURIComponent(generatedAudio)}` : ""}
                   className="hidden"
+                  onError={(e) => {
+                    console.error('Audio loading error:', e)
+                    console.log('Trying to load audio from:', generatedAudio)
+                  }}
+                  onLoadedData={() => {
+                    console.log('Audio loaded successfully from:', generatedAudio)
+                  }}
                 />
               </div>
             ) : (
