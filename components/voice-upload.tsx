@@ -47,7 +47,7 @@ export function VoiceUpload({
   const [isProcessingAudio, setIsProcessingAudio] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const MIN_AUDIO_DURATION = 10
-  const MAX_AUDIO_DURATION = 15
+  const MAX_AUDIO_DURATION = 18
   
   // 服务健康状态
   const [serviceHealthy, setServiceHealthy] = useState<boolean | null>(null)
