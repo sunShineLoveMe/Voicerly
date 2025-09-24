@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
+import type { DownloadedAudio } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -18,7 +19,7 @@ interface ConfigurationPanelProps {
   setInferenceSteps: (value: number) => void
   textNormalization: boolean
   setTextNormalization: (value: boolean) => void
-  generatedAudio?: string | null
+  generatedAudio?: DownloadedAudio | null
 }
 
 export function ConfigurationPanel({
@@ -107,8 +108,8 @@ export function ConfigurationPanel({
   const handleDownload = () => {
     if (generatedAudio) {
       const a = document.createElement("a")
-      a.href = `http://localhost:7860/file=${encodeURIComponent(generatedAudio)}`
-      a.download = "generated-voice.mp3"
+      a.href = generatedAudio.url
+      a.download = generatedAudio.filename || "generated-voice.mp3"
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -248,8 +249,20 @@ export function ConfigurationPanel({
               <div className="bg-muted/50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="text-sm font-medium">{audioReady}</div>
-                    <div className="text-xs text-muted-foreground">{readyForDownload}</div>
+                    <div className="text-sm font-medium">{generatedAudio?.filename || audioReady}</div>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>
+                        {readyForDownload}
+                        {typeof generatedAudio?.size === "number" && generatedAudio.size > 0 && (
+                          <> • {(generatedAudio.size / 1024 / 1024).toFixed(2)} MB</>
+                        )}
+                      </div>
+                      {generatedAudio?.source && (
+                        <div className="text-[11px] text-muted-foreground/70 truncate" title={generatedAudio.source}>
+                          {generatedAudio.source}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={togglePlayback}>
                     {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -280,14 +293,14 @@ export function ConfigurationPanel({
 
                 <audio
                   ref={audioRef}
-                  src={generatedAudio ? `http://localhost:7860/file=${encodeURIComponent(generatedAudio)}` : ""}
+                  src={generatedAudio?.url || ""}
                   className="hidden"
                   onError={(e) => {
-                    console.error('Audio loading error:', e)
-                    console.log('Trying to load audio from:', generatedAudio)
+                    console.error("Audio loading error:", e)
+                    console.log("Trying to load audio from:", generatedAudio)
                   }}
                   onLoadedData={() => {
-                    console.log('Audio loaded successfully from:', generatedAudio)
+                    console.log("Audio loaded successfully from:", generatedAudio)
                   }}
                 />
               </div>

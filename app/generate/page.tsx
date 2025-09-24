@@ -24,7 +24,7 @@ export default function GeneratePage() {
   const [inferenceSteps, setInferenceSteps] = useState(10)
   
   // 添加生成音频的状态管理
-  const [generatedAudio, setGeneratedAudio] = useState<string | null>(null)
+  const [generatedAudio, setGeneratedAudio] = useState<{ url: string; filename: string; mimeType: string; size: number; source: string } | null>(null)
 
   const canGenerate = Boolean(
     uploadedFile && 

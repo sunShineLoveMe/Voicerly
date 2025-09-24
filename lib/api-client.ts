@@ -21,6 +21,14 @@ export interface VoiceRecognitionResponse {
   text: string
 }
 
+export interface DownloadedAudio {
+  url: string
+  filename: string
+  mimeType: string
+  size: number
+  source: string
+}
+
 export class VoxCPMClient {
   private baseUrl: string
   private client: any = null
@@ -94,8 +102,7 @@ export class VoxCPMClient {
         throw new Error('API返回数据格式错误: ' + JSON.stringify(result))
       }
 
-      // 根据API文档，返回的应该是文件路径
-      const filepath = Array.isArray(result.data) ? result.data[0] : result.data
+      const filepath = this.extractFilepath(result.data)
       console.log('Generated audio filepath:', filepath)
 
       return {
@@ -104,6 +111,128 @@ export class VoxCPMClient {
     } catch (error) {
       console.error('Voice generation failed:', error)
       throw new Error(`语音生成失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    }
+  }
+
+  private resolveFileUrl(rawFilepath: unknown): string {
+    const filepath = typeof rawFilepath === 'string' ? rawFilepath : this.extractFilepath(rawFilepath)
+
+    if (!filepath) {
+      throw new Error('未收到有效的音频文件路径')
+    }
+
+    if (filepath.startsWith('http://') || filepath.startsWith('https://')) {
+      return filepath
+    }
+
+    // Gradio在macOS上可能返回 /private/var/.../T/gradio/**，该路径可通过 /tmp/ 访问
+    let normalizedPath = filepath
+    const macTempMatch = normalizedPath.match(/^\/private\/var\/folders\/.+?\/T\/(gradio\/.+)$/)
+    if (macTempMatch && macTempMatch[1]) {
+      normalizedPath = `/tmp/${macTempMatch[1]}`
+    }
+
+    // 如果已经是 /file= 开头，直接拼接
+    if (normalizedPath.startsWith('/file=')) {
+      return `${this.baseUrl}${normalizedPath}`
+    }
+
+    if (normalizedPath.startsWith('file=')) {
+      return `${this.baseUrl}/${normalizedPath}`
+    }
+
+    const encodedPath = encodeURI(normalizedPath)
+    return `${this.baseUrl}/file=${encodedPath}`
+  }
+
+  private extractFilepath(data: unknown): string {
+    if (!data) {
+      throw new Error('API未返回音频文件路径')
+    }
+
+    if (typeof data === 'string') {
+      return data
+    }
+
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        try {
+          const candidate = this.extractFilepath(item)
+          if (candidate) {
+            return candidate
+          }
+        } catch (error) {
+          // continue scanning
+        }
+      }
+      throw new Error('未能从数组中解析音频文件路径')
+    }
+
+    if (typeof data === 'object') {
+      const obj = data as Record<string, unknown>
+
+      // Gradio通常只返回一个字符串路径，但为了兼容其他结构我们做递归检查
+      const candidateKeys = ['url', 'name', 'path', 'file', 'filepath', 'data']
+      for (const key of candidateKeys) {
+        if (key in obj && obj[key]) {
+          try {
+            const candidate = this.extractFilepath(obj[key])
+            if (candidate) {
+              return candidate
+            }
+          } catch (error) {
+            // 尝试其他键
+          }
+        }
+      }
+
+      // 如果对象本身包含典型的Gradio值
+      if ('path' in obj && typeof obj.path === 'string') {
+        return obj.path
+      }
+      if ('url' in obj && typeof obj.url === 'string') {
+        return obj.url
+      }
+      if ('name' in obj && typeof obj.name === 'string') {
+        return obj.name
+      }
+    }
+
+    throw new Error(`无法解析音频文件路径: ${JSON.stringify(data)}`)
+  }
+
+  async downloadGeneratedAudio(filepath: unknown): Promise<DownloadedAudio> {
+    try {
+      const fileUrl = this.resolveFileUrl(filepath)
+      console.log('Downloading generated audio from:', fileUrl)
+
+      const response = await fetch(fileUrl)
+      if (!response.ok) {
+        throw new Error(`音频文件下载失败: ${response.status} ${response.statusText}`)
+      }
+
+      const blob = await response.blob()
+      const mimeType = response.headers.get('content-type') || 'audio/mpeg'
+      const size = blob.size
+      const rawFilename = typeof filepath === 'string' ? filepath : this.extractFilepath(filepath)
+      const filename = decodeURIComponent((rawFilename.split('/').pop() || 'generated-voice.wav').toString())
+
+      if (typeof window === 'undefined') {
+        throw new Error('音频下载需要在浏览器环境中执行')
+      }
+
+      const url = URL.createObjectURL(blob)
+
+      return {
+        url,
+        filename,
+        mimeType,
+        size,
+        source: filepath,
+      }
+    } catch (error) {
+      console.error('Failed to download generated audio:', error)
+      throw new Error(`音频文件处理失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
 
@@ -153,3 +282,5 @@ export const voxcpmClient = new VoxCPMClient()
 export const generateVoice = (params: VoiceGenerationParams) => voxcpmClient.generateVoice(params)
 export const recognizeVoice = (audioFile: File) => voxcpmClient.recognizeVoice(audioFile)
 export const checkVoxCPMHealth = () => voxcpmClient.checkHealth()
+export const downloadGeneratedAudio = (filepath: unknown) => voxcpmClient.downloadGeneratedAudio(filepath)
+

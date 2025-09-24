@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Wand2, Loader2, AlertCircle } from "lucide-react"
-import { generateVoice, type VoiceGenerationParams } from "@/lib/api-client"
+import { generateVoice, downloadGeneratedAudio, type VoiceGenerationParams, type DownloadedAudio } from "@/lib/api-client"
 
 interface GenerationPanelProps {
   language: "en" | "zh"
@@ -21,7 +21,7 @@ interface GenerationPanelProps {
   textNormalization?: boolean
   speechEnhancement?: boolean
   // 音频生成回调
-  onAudioGenerated?: (audioPath: string | null) => void
+  onAudioGenerated?: (audio: DownloadedAudio | null) => void
 }
 
 export function GenerationPanel({ 
@@ -81,6 +81,8 @@ export function GenerationPanel({
     setError(null)
     onAudioGenerated?.(null)
 
+    let progressInterval: ReturnType<typeof setInterval> | null = null
+
     try {
       // 检查服务状态
       console.log('Checking VoxCPM service health...')
@@ -90,7 +92,7 @@ export function GenerationPanel({
         throw new Error('VoxCPM服务未运行。请确保服务在localhost:7860端口启动。')
       }
       // 模拟进度更新
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90))
       }, 500)
 
@@ -112,12 +114,17 @@ export function GenerationPanel({
 
       const result = await generateVoice(params)
       console.log('Generation Panel - received result:', result)
+
+      const audioData = await downloadGeneratedAudio(result.filepath)
+      console.log('Generation Panel - downloaded audio metadata:', audioData)
       
-      clearInterval(progressInterval)
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
       setProgress(100)
       
-      // 通过回调传递生成的音频路径
-      onAudioGenerated?.(result.filepath)
+      // 通过回调传递生成的音频Blob URL
+      onAudioGenerated?.(audioData)
       setIsGenerating(false)
       onGenerate()
       
@@ -126,6 +133,13 @@ export function GenerationPanel({
       setProgress(0)
       setError(error instanceof Error ? error.message : "Unknown error occurred")
       console.error('Voice generation failed:', error)
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+    } finally {
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
     }
   }
 

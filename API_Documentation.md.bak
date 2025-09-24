@@ -232,40 +232,6 @@ curl -X POST "http://localhost:7860/api/predict" \
 - **输出格式**: WAV (16kHz 采样率)
 - **文件处理**: 通过 `handle_file()` 函数上传本地文件或远程URL
 
-## 音频下载与格式转换
-
-VoxCPM 的 `/generate` 接口返回的是 **音频文件在 Gradio 服务器上的路径**，例如：
-
-```
-"/tmp/gradio/12345/generated.wav"
-```
-
-### 建议的前端处理流程
-1. 前端收到 `filepath` 后，需要调用 `http://localhost:7860/file=<filepath>` 下载音频文件。
-2. 将下载的 Blob 转换成浏览器可播放的 Object URL (`URL.createObjectURL`)。
-3. 播放完成后，记得调用 `URL.revokeObjectURL()` 释放资源。
-
-示例：
-
-```ts
-const response = await fetch(`http://localhost:7860/file=${encodeURIComponent(filepath)}`)
-const blob = await response.blob()
-const audioUrl = URL.createObjectURL(blob)
-```
-
-### 建议的后端中间层方案
-如果有后端中间层，可以在后端直接调用 `/generate` 接口，下载音频文件并返回给前端。例如：
-
-1. 后端调用 `/generate` → 获得 `filepath`
-2. 后端下载音频文件 → 读取为二进制数据
-3. 后端以 `audio/mpeg` 或 `audio/wav` 的形式返回给前端
-
-### 注意事项
-- 音频默认是 WAV 格式，如需转换 MP3 需要额外处理
-- 大文件下载建议添加超时和错误处理
-- 建议在前端提供下载按钮供用户保存音频
-- 需要在打包或部署时确保跨域设置允许前端访问 `http://localhost:7860/file=...`
-
 ### 示例文件路径处理
 ```python
 from gradio_client import handle_file
