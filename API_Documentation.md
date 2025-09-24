@@ -31,11 +31,11 @@ pip install gradio_client
 | 2 | `prompt_text_input` | str | 否 | "Just by listening a few minutes a day, you'll be able to eliminate negative thoughts by conditioning your mind to be more positive." | 参考文本 - 在"Prompt Text"文本框中提供的输入值 |
 | 3 | `cfg_value_input` | float | 否 | 2 | CFG引导比例 - 在"CFG Value (Guidance Scale)"滑块组件中提供的输入值 |
 | 4 | `inference_timesteps_input` | float | 否 | 10 | 推理时间步数 - 在"Inference Timesteps"滑块组件中提供的输入值 |
-| 5 | `temperature_input` | float | 否 | 0.7 | 温度系数 - 控制输出的随机性，较低值更稳定 |
-| 6 | `top_p_input` | float | 否 | 0.9 | Top-P 核采样阈值 - 控制生成多样性 |
-| 7 | `min_length_input` | float | 否 | 10 | 最小生成长度 - 生成的最少 token 数 |
-| 8 | `max_length_input` | float | 否 | 200 | 最大生成长度 - 生成的最大 token 数 |
-| 9 | `repetition_penalty_input` | float | 否 | 1.1 | 重复惩罚 - 大于1时减少重复片段 |
+| 5 | `temperature` | float | 否 | 0.7 | 温度系数 - 控制输出的随机性，较低值更稳定 |
+| 6 | `top_p` | float | 否 | 0.9 | Top-P 核采样阈值 - 控制生成多样性 |
+| 7 | `min_length` | float | 否 | 10 | 最小生成长度 - 生成的最少 token 数 |
+| 8 | `max_length` | float | 否 | 200 | 最大生成长度 - 生成的最大 token 数 |
+| 9 | `repetition_penalty` | float | 否 | 1.1 | 重复惩罚 - 大于1时减少重复片段 |
 | 10 | `do_normalize` | bool | 否 | False | 文本正则化 - 在"Text Normalization"复选框组件中提供的输入值 |
 | 11 | `denoise` | bool | 否 | False | 音频降噪 - 在"Prompt Speech Enhancement"复选框组件中提供的输入值 |
 

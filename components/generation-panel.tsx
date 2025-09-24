@@ -113,11 +113,11 @@ export function GenerationPanel({
         prompt_text_input: promptText || null,
         cfg_value_input: cfgValue,
         inference_timesteps_input: inferenceSteps,
-        temperature_input: temperature,
-        top_p_input: topP,
-        min_length_input: minLength,
-        max_length_input: maxLength,
-        repetition_penalty_input: repetitionPenalty,
+        temperature,
+        top_p: topP,
+        min_length: minLength,
+        max_length: maxLength,
+        repetition_penalty: repetitionPenalty,
         do_normalize: textNormalization,
         denoise: speechEnhancement
       }

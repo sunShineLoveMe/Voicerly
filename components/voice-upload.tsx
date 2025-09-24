@@ -78,8 +78,8 @@ export function VoiceUpload({
       durationLimitTitle: "Duration Limit",
     },
     zh: {
-      title: "上传语音样本（10–15秒）",
-      subtitle: "上传10-15秒的音频文件来克隆您的声音",
+      title: "上传语音样本（10–18秒）",
+      subtitle: "上传10-18秒的音频文件来克隆您的声音",
       dragText: "拖拽音频文件到此处，或点击浏览文件",
       supportedFormats: "支持格式：MP3, WAV, M4A（最大10MB）",
       uploadButton: "选择文件",
@@ -96,7 +96,7 @@ export function VoiceUpload({
       loop: "循环",
       speed: "速度",
       volumeLabel: "音量",
-      durationError: "请上传长度在 10 到 15 秒之间的音频样本。",
+      durationError: "请上传长度在 10 到 18 秒之间的音频样本。",
       durationWarningText: (seconds: number, min: number, max: number) =>
         `该音频时长为 ${seconds} 秒。为确保体验，建议上传 ${min} 到 ${max} 秒的音频。`,
       durationLimitTitle: "时长限制",
