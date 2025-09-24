@@ -9,11 +9,6 @@ export interface VoiceGenerationParams {
   prompt_text_input?: string
   cfg_value_input?: number
   inference_timesteps_input?: number
-  temperature?: number
-  top_p?: number
-  min_length?: number
-  max_length?: number
-  repetition_penalty?: number
   do_normalize?: boolean
   denoise?: boolean
 }
@@ -97,11 +92,6 @@ export class VoxCPMClient {
         prompt_text_input: params.prompt_text_input || null,
         cfg_value_input: params.cfg_value_input || 2.0,
         inference_timesteps_input: params.inference_timesteps_input || 10,
-        temperature: params.temperature ?? 0.7,
-        top_p: params.top_p ?? 0.9,
-        min_length: params.min_length ?? 10,
-        max_length: params.max_length ?? 200,
-        repetition_penalty: params.repetition_penalty ?? 1.1,
         do_normalize: params.do_normalize || false,
         denoise: params.denoise || false
       })
