@@ -258,7 +258,10 @@ export function ConfigurationPanel({
                         )}
                       </div>
                       {generatedAudio?.source && (
-                        <div className="text-[11px] text-muted-foreground/70 truncate" title={generatedAudio.source}>
+                        <div
+                          className="text-[11px] text-muted-foreground/70 break-all whitespace-normal max-h-10 overflow-hidden"
+                          title={generatedAudio.source}
+                        >
                           {generatedAudio.source}
                         </div>
                       )}
