@@ -22,8 +22,11 @@ export default function GeneratePage() {
   const [textNormalization, setTextNormalization] = useState(false)
   const [cfgValue, setCfgValue] = useState(2)
   const [inferenceSteps, setInferenceSteps] = useState(10)
+  
+  // 添加生成音频的状态管理
+  const [generatedAudio, setGeneratedAudio] = useState<string | null>(null)
 
-  const canGenerate = uploadedFile && (promptText?.trim().length ?? 0) > 0 && (targetText?.trim().length ?? 0) > 0
+  const canGenerate = Boolean(uploadedFile && (promptText?.trim().length ?? 0) > 0 && (targetText?.trim().length ?? 0) > 0)
 
   const handleGenerate = () => {
     if (canGenerate && credits > 0) {
@@ -94,6 +97,7 @@ export default function GeneratePage() {
                 inferenceSteps={inferenceSteps}
                 textNormalization={textNormalization}
                 speechEnhancement={speechEnhancement}
+                onAudioGenerated={setGeneratedAudio}
               />
             </div>
 
@@ -107,6 +111,7 @@ export default function GeneratePage() {
                 setInferenceSteps={setInferenceSteps}
                 textNormalization={textNormalization}
                 setTextNormalization={setTextNormalization}
+                generatedAudio={generatedAudio}
               />
             </div>
           </div>

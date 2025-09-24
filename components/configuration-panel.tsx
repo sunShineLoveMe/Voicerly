@@ -18,7 +18,7 @@ interface ConfigurationPanelProps {
   setInferenceSteps: (value: number) => void
   textNormalization: boolean
   setTextNormalization: (value: boolean) => void
-  generatedAudio?: File | null
+  generatedAudio?: string | null
 }
 
 export function ConfigurationPanel({
@@ -106,14 +106,12 @@ export function ConfigurationPanel({
 
   const handleDownload = () => {
     if (generatedAudio) {
-      const url = URL.createObjectURL(generatedAudio)
       const a = document.createElement("a")
-      a.href = url
+      a.href = generatedAudio
       a.download = "generated-voice.mp3"
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
     }
   }
 
@@ -282,7 +280,7 @@ export function ConfigurationPanel({
 
                 <audio
                   ref={audioRef}
-                  src={generatedAudio ? URL.createObjectURL(generatedAudio) : ""}
+                  src={generatedAudio || ""}
                   className="hidden"
                 />
               </div>

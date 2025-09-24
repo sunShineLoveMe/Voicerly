@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Wand2, Download, Play, Pause, Loader2, AlertCircle } from "lucide-react"
+import { Wand2, Loader2, AlertCircle } from "lucide-react"
 import { generateVoice, type VoiceGenerationParams } from "@/lib/api-client"
 
 interface GenerationPanelProps {
@@ -20,6 +20,8 @@ interface GenerationPanelProps {
   inferenceSteps?: number
   textNormalization?: boolean
   speechEnhancement?: boolean
+  // 音频生成回调
+  onAudioGenerated?: (audioPath: string | null) => void
 }
 
 export function GenerationPanel({ 
@@ -33,11 +35,10 @@ export function GenerationPanel({
   cfgValue = 2,
   inferenceSteps = 10,
   textNormalization = false,
-  speechEnhancement = false
+  speechEnhancement = false,
+  onAudioGenerated
 }: GenerationPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedAudio, setGeneratedAudio] = useState<string | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,9 +47,6 @@ export function GenerationPanel({
       generateButton: "Generate Speech",
       generating: "Generating...",
       creditsUsed: "Credits will be used: 1",
-      downloadAudioLabel: "Download Audio",
-      playAudioLabel: "Play Audio",
-      pauseAudioLabel: "Pause",
       processingSteps: ["Analyzing voice sample...", "Processing text...", "Generating audio...", "Finalizing..."],
       errorTitle: "Generation Failed",
       retryButton: "Retry Generation",
@@ -57,9 +55,6 @@ export function GenerationPanel({
       generateButton: "生成语音",
       generating: "生成中...",
       creditsUsed: "将使用积分：1",
-      downloadAudioLabel: "下载音频",
-      playAudioLabel: "播放音频",
-      pauseAudioLabel: "暂停",
       processingSteps: ["分析语音样本...", "处理文本...", "生成音频...", "完成中..."],
       errorTitle: "生成失败",
       retryButton: "重新生成",
@@ -70,9 +65,6 @@ export function GenerationPanel({
     generateButton,
     generating,
     creditsUsed,
-    downloadAudioLabel,
-    playAudioLabel,
-    pauseAudioLabel,
     processingSteps,
     errorTitle,
     retryButton,
@@ -87,7 +79,7 @@ export function GenerationPanel({
     setIsGenerating(true)
     setProgress(0)
     setError(null)
-    setGeneratedAudio(null)
+    onAudioGenerated?.(null)
 
     try {
       // 模拟进度更新
@@ -111,8 +103,8 @@ export function GenerationPanel({
       clearInterval(progressInterval)
       setProgress(100)
       
-      // 设置生成的音频路径
-      setGeneratedAudio(result.filepath)
+      // 通过回调传递生成的音频路径
+      onAudioGenerated?.(result.filepath)
       setIsGenerating(false)
       onGenerate()
       
@@ -124,18 +116,6 @@ export function GenerationPanel({
     }
   }
 
-  const togglePlayback = () => {
-    setIsPlaying(!isPlaying)
-    // In a real app, this would control audio playback
-  }
-
-  const downloadAudio = () => {
-    // In a real app, this would trigger audio download
-    const link = document.createElement("a")
-    link.href = generatedAudio || ""
-    link.download = "generated-voice.mp3"
-    link.click()
-  }
 
   const currentStep = Math.floor((progress / 100) * processingSteps.length)
 
@@ -164,11 +144,11 @@ export function GenerationPanel({
         </Card>
       )}
 
-      {canGenerate && !isGenerating && !generatedAudio && !error && (
+      {canGenerate && !isGenerating && !error && (
         <p className="text-xs text-muted-foreground text-center">{creditsUsed}</p>
       )}
 
-      {!isGenerating && !generatedAudio && !error && (
+      {!isGenerating && !error && (
         <Button
           onClick={handleGenerate}
           disabled={!canGenerate || credits < 1}
@@ -197,35 +177,6 @@ export function GenerationPanel({
         </Card>
       )}
 
-      {generatedAudio && !isGenerating && (
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-6">
-            <div className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Wand2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">generated-voice.mp3</p>
-                    <p className="text-xs text-muted-foreground">Ready for download</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={togglePlayback}>
-                    {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    {isPlaying ? pauseAudioLabel : playAudioLabel}
-                  </Button>
-                  <Button size="sm" onClick={downloadAudio}>
-                    <Download className="w-4 h-4 mr-2" />
-                    {downloadAudioLabel}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {credits < 1 && (
         <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
