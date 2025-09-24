@@ -43,6 +43,7 @@ export function VoiceUpload({
   const [volume, setVolume] = useState(1)
   const [isLooping, setIsLooping] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   
   // 服务健康状态
@@ -166,14 +167,28 @@ export function VoiceUpload({
 
   // 处理音频文件，创建URL和生成波形数据
   const processAudioFile = async (file: File) => {
+    setIsProcessingAudio(true)
     const url = URL.createObjectURL(file)
     setAudioUrl(url)
+    
+    console.log('Processing audio file:', file.name, file.type, file.size)
     
     try {
       // 使用Web Audio API生成真实的波形数据
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      console.log('AudioContext created, state:', audioContext.state)
+      
+      // 如果AudioContext被挂起，尝试恢复
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume()
+        console.log('AudioContext resumed, new state:', audioContext.state)
+      }
+      
       const arrayBuffer = await file.arrayBuffer()
+      console.log('ArrayBuffer length:', arrayBuffer.byteLength)
+      
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      console.log('Audio decoded - duration:', audioBuffer.duration, 'channels:', audioBuffer.numberOfChannels, 'sample rate:', audioBuffer.sampleRate)
       
       // 提取音频数据并生成波形
       const channelData = audioBuffer.getChannelData(0) // 使用第一个声道
@@ -181,21 +196,33 @@ export function VoiceUpload({
       const blockSize = Math.floor(channelData.length / samples)
       const waveform = []
       
+      console.log('Channel data length:', channelData.length, 'Block size:', blockSize)
+      
       for (let i = 0; i < samples; i++) {
         let sum = 0
         for (let j = 0; j < blockSize; j++) {
           sum += Math.abs(channelData[i * blockSize + j] || 0)
         }
         const average = sum / blockSize
-        waveform.push(average * 100) // 缩放到0-100范围
+        // 改进缩放逻辑，确保波形可见
+        waveform.push(Math.max(average * 300, 5)) // 至少5px高度，最大缩放300倍
       }
       
+      console.log('Waveform data generated:', waveform.slice(0, 10), 'Total samples:', waveform.length)
+      console.log('Waveform range:', Math.min(...waveform), 'to', Math.max(...waveform))
+      
       setWaveformData(waveform)
+      
+      // 关闭AudioContext以释放资源
+      await audioContext.close()
     } catch (error) {
       console.error('Error processing audio:', error)
       // 如果Web Audio API失败，使用备用的随机数据
-      const fallbackData = Array.from({ length: 200 }, () => Math.random() * 100)
+      const fallbackData = Array.from({ length: 200 }, () => Math.random() * 40 + 10) // 10-50px高度
+      console.log('Using fallback waveform data')
       setWaveformData(fallbackData)
+    } finally {
+      setIsProcessingAudio(false)
     }
   }
 
@@ -335,6 +362,7 @@ export function VoiceUpload({
     setPlaybackRate(1)
     setVolume(1)
     setIsLooping(false)
+    setIsProcessingAudio(false)
     
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -445,23 +473,41 @@ export function VoiceUpload({
                       seekTo(newTime)
                     }}
                   >
-                    <div className="flex items-end justify-center space-x-1 h-full px-2">
+                    <div className="flex items-end justify-center h-full px-2 space-x-0.5">
                       {waveformData.length > 0 ? (
-                        waveformData.map((height, index) => (
-                          <div
-                            key={index}
-                            className="hover:opacity-80 transition-opacity"
-                            style={{ 
-                              height: `${Math.max(height * 0.6, 4)}px`,
-                              width: '2px',
-                              backgroundColor: currentTime > (index / waveformData.length) * duration ? '#60a5fa' : '#94a3b8'
-                            }}
-                          />
-                        ))
+                        waveformData.map((height, index) => {
+                          const normalizedHeight = Math.min(Math.max(height * 0.4, 8), 56) // 8px到56px之间
+                          const progress = duration > 0 ? currentTime / duration : 0
+                          const isPlayed = index / waveformData.length < progress
+                          
+                          return (
+                            <div
+                              key={index}
+                              className="hover:opacity-80 transition-all duration-75 rounded-sm"
+                              style={{ 
+                                height: `${normalizedHeight}px`,
+                                width: '3px',
+                                backgroundColor: isPlayed ? '#3b82f6' : '#64748b',
+                                boxShadow: isPlayed ? '0 0 2px rgba(59, 130, 246, 0.5)' : 'none'
+                              }}
+                            />
+                          )
+                        })
                       ) : (
                         // 显示加载状态或占位符
                         <div className="flex items-center justify-center w-full h-full text-slate-500">
-                          <div className="animate-pulse">Loading waveform...</div>
+                          {isProcessingAudio ? (
+                            <div className="animate-pulse flex items-center space-x-1">
+                              <div className="w-1 h-1 bg-slate-600 rounded-full animate-bounce"></div>
+                              <div className="w-1 h-1 bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-1 h-1 bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                              <span className="ml-2 text-xs">Processing audio...</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-600">
+                              No waveform data
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
