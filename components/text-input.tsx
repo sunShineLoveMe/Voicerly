@@ -11,16 +11,17 @@ interface TextInputProps {
   onTextChange: (text: string) => void
   placeholder?: string
   title?: string
+  maxChars?: number
 }
 
-export function TextInput({ language, text, onTextChange, placeholder, title }: TextInputProps) {
+export function TextInput({ language, text, onTextChange, placeholder, title, maxChars = 500 }: TextInputProps) {
   const [charCount, setCharCount] = useState(text.length)
-  const maxChars = 1000
 
   const content = {
     en: {
       defaultTitle: "Prompt Text",
       subtitle: "Enter the text you want to convert to speech",
+      limitHint: "For the best experience, keep your prompt under 500 characters.",
       defaultPlaceholder:
         "Please enter the prompt text. Automatic recognition is supported, and you can correct the results yourself.",
       charactersUsed: "characters used",
@@ -28,12 +29,13 @@ export function TextInput({ language, text, onTextChange, placeholder, title }: 
     zh: {
       defaultTitle: "提示文本",
       subtitle: "输入您想要转换为语音的文本",
+      limitHint: "为获得更好的体验，建议提示文本控制在 500 个字符以内。",
       defaultPlaceholder: "请输入提示文本。支持自动识别，您可以自行修正结果。",
       charactersUsed: "已使用字符",
     },
   }
 
-  const { defaultTitle, subtitle, defaultPlaceholder, charactersUsed } = content[language]
+  const { defaultTitle, subtitle, defaultPlaceholder, charactersUsed, limitHint } = content[language]
 
   const handleTextChange = (value: string) => {
     if (value.length <= maxChars) {
@@ -61,11 +63,7 @@ export function TextInput({ language, text, onTextChange, placeholder, title }: 
             <Badge variant="secondary" className="text-xs">
               {charCount}/{maxChars} {charactersUsed}
             </Badge>
-            {charCount > maxChars * 0.9 && (
-              <p className="text-xs text-muted-foreground">
-                {language === "en" ? "Approaching character limit" : "接近字符限制"}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">{limitHint}</p>
           </div>
         </div>
       </CardContent>

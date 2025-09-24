@@ -43,16 +43,19 @@ export function VoiceUpload({
   const [volume, setVolume] = useState(1)
   const [isLooping, setIsLooping] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [durationWarning, setDurationWarning] = useState<string | null>(null)
   const [isProcessingAudio, setIsProcessingAudio] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const MIN_AUDIO_DURATION = 10
+  const MAX_AUDIO_DURATION = 15
   
   // 服务健康状态
   const [serviceHealthy, setServiceHealthy] = useState<boolean | null>(null)
 
   const content = {
     en: {
-      title: "Upload voice sample (5–10s)",
-      subtitle: "Upload a 5-10 second audio file to clone your voice",
+      title: "Upload voice sample (10–15s)",
+      subtitle: "Upload a 10-15 second audio file to clone your voice",
       dragText: "Drag and drop your audio file here, or click to browse",
       supportedFormats: "Supported formats: MP3, WAV, M4A (Max 10MB)",
       uploadButton: "Choose File",
@@ -69,10 +72,14 @@ export function VoiceUpload({
       loop: "Loop",
       speed: "Speed",
       volumeLabel: "Volume",
+      durationError: "Please upload an audio sample between 10 and 15 seconds.",
+      durationWarningText: (seconds: number, min: number, max: number) =>
+        `The file is ${seconds} seconds long. For best results, keep uploads between ${min} and ${max} seconds.`,
+      durationLimitTitle: "Duration Limit",
     },
     zh: {
-      title: "上传语音样本（5–10秒）",
-      subtitle: "上传5-10秒的音频文件来克隆您的声音",
+      title: "上传语音样本（10–15秒）",
+      subtitle: "上传10-15秒的音频文件来克隆您的声音",
       dragText: "拖拽音频文件到此处，或点击浏览文件",
       supportedFormats: "支持格式：MP3, WAV, M4A（最大10MB）",
       uploadButton: "选择文件",
@@ -89,6 +96,10 @@ export function VoiceUpload({
       loop: "循环",
       speed: "速度",
       volumeLabel: "音量",
+      durationError: "请上传长度在 10 到 15 秒之间的音频样本。",
+      durationWarningText: (seconds: number, min: number, max: number) =>
+        `该音频时长为 ${seconds} 秒。为确保体验，建议上传 ${min} 到 ${max} 秒的音频。`,
+      durationLimitTitle: "时长限制",
     },
   }
 
@@ -111,6 +122,9 @@ export function VoiceUpload({
     loop,
     speed,
     volumeLabel,
+    durationError,
+    durationWarningText,
+    durationLimitTitle,
   } = content[language]
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -188,6 +202,26 @@ export function VoiceUpload({
       console.log('ArrayBuffer length:', arrayBuffer.byteLength)
       
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      const durationInSeconds = audioBuffer.duration
+      console.log('Uploaded audio duration (s):', durationInSeconds)
+
+      if (durationInSeconds < MIN_AUDIO_DURATION || durationInSeconds > MAX_AUDIO_DURATION) {
+        const roundedDuration = Math.round(durationInSeconds)
+        setUploadError(durationError)
+        setDurationWarning(durationWarningText(roundedDuration, MIN_AUDIO_DURATION, MAX_AUDIO_DURATION))
+        if (audioRef.current) {
+          audioRef.current.pause()
+        }
+        setIsPlaying(false)
+        setCurrentTime(0)
+        setDuration(0)
+        setWaveformData([])
+        setAudioUrl(null)
+        onFileUpload(null)
+        await audioContext.close()
+        return
+      }
+      setDurationWarning(null)
       console.log('Audio decoded - duration:', audioBuffer.duration, 'channels:', audioBuffer.numberOfChannels, 'sample rate:', audioBuffer.sampleRate)
       
       // 提取音频数据并生成波形
@@ -352,6 +386,7 @@ export function VoiceUpload({
     onFileUpload(null)
     setTranscriptionError(null)
     setUploadError(null)
+    setDurationWarning(null)
     
     // 清理音频相关状态
     if (audioUrl) {
@@ -451,6 +486,12 @@ export function VoiceUpload({
               <div className="mt-3 p-3 bg-red-900/50 border border-red-600/50 rounded text-red-200 text-sm">
                 <div className="font-medium">Upload Error:</div>
                 <div>{uploadError}</div>
+              </div>
+            )}
+            {durationWarning && (
+              <div className="mt-3 p-3 bg-yellow-900/50 border border-yellow-600/50 rounded text-yellow-100 text-sm">
+                <div className="font-medium">{language === "en" ? "Duration Limit" : "时长限制"}</div>
+                <div>{durationWarning}</div>
               </div>
             )}
           </div>
@@ -664,43 +705,49 @@ export function VoiceUpload({
                   <div>{transcriptionError}</div>
                 </div>
               )}
+              {durationWarning && (
+                <div className="mb-3 p-2 bg-yellow-900/50 border border-yellow-600/50 rounded text-yellow-100 text-xs">
+                  <div className="font-medium">{language === "en" ? "Duration Warning:" : "时长提醒:"}</div>
+                  <div>{durationWarning}</div>
+                </div>
+              )}
 
               {/* 操作按钮 */}
               <div className="mt-4 pt-3 border-t border-slate-700 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      disabled
-                      className="bg-transparent border-slate-600 text-slate-500 cursor-not-allowed"
-                      title="Recording feature coming soon"
-                      aria-label={recordButton}
-                    >
-                      <Volume2 className="w-4 h-4 mr-1" />
-                      {recordButton}
-                    </Button>
-                    
-                    {/* 转录重试按钮 - 仅在转录失败时显示 */}
-                    {transcriptionError && onTranscriptionUpdate && (
+                    <div className="flex items-center space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={handleTranscribe}
-                        disabled={isTranscribing}
-                        className="bg-transparent border-yellow-600 text-yellow-400 hover:bg-yellow-900/50"
-                        title="Retry transcription"
-                        aria-label="Retry transcription"
+                        disabled
+                        className="bg-transparent border-slate-600 text-slate-500 cursor-not-allowed"
+                        title="Recording feature coming soon"
+                        aria-label={recordButton}
                       >
-                        {isTranscribing ? (
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        ) : (
-                          <Type className="w-4 h-4 mr-1" />
-                        )}
-                        {language === "en" ? "Retry" : "重试"}
+                        <Volume2 className="w-4 h-4 mr-1" />
+                        {recordButton}
                       </Button>
-                    )}
-                  </div>
+                      
+                      {/* 转录重试按钮 - 仅在转录失败时显示 */}
+                      {transcriptionError && onTranscriptionUpdate && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleTranscribe}
+                          disabled={isTranscribing}
+                          className="bg-transparent border-yellow-600 text-yellow-400 hover:bg-yellow-900/50"
+                          title="Retry transcription"
+                          aria-label="Retry transcription"
+                        >
+                          {isTranscribing ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <Type className="w-4 h-4 mr-1" />
+                          )}
+                          {language === "en" ? "Retry" : "重试"}
+                        </Button>
+                      )}
+                    </div>
                   
                   <div className="flex items-center space-x-2">
                     <Button 
