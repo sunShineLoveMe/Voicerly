@@ -23,7 +23,7 @@ pip install gradio_client
 **API名称**: `generate`  
 **功能**: 根据输入文本生成高质量的语音音频，支持音色克隆和风格控制
 
-#### 请求参数 (共7个参数)
+#### 请求参数 (共12个参数)
 | 参数位置 | 参数名 | 类型 | 必填 | 默认值 | 描述 |
 |---------|--------|------|------|--------|------|
 | 0 | `text_input` | str | 是 | "VoxCPM is an innovative end-to-end TTS model from ModelBest, designed to generate highly realistic speech." | 目标文本 - 在"Target Text"文本框中提供的输入值 |
@@ -31,8 +31,13 @@ pip install gradio_client
 | 2 | `prompt_text_input` | str | 否 | "Just by listening a few minutes a day, you'll be able to eliminate negative thoughts by conditioning your mind to be more positive." | 参考文本 - 在"Prompt Text"文本框中提供的输入值 |
 | 3 | `cfg_value_input` | float | 否 | 2 | CFG引导比例 - 在"CFG Value (Guidance Scale)"滑块组件中提供的输入值 |
 | 4 | `inference_timesteps_input` | float | 否 | 10 | 推理时间步数 - 在"Inference Timesteps"滑块组件中提供的输入值 |
-| 5 | `do_normalize` | bool | 否 | False | 文本正则化 - 在"Text Normalization"复选框组件中提供的输入值 |
-| 6 | `denoise` | bool | 否 | False | 音频降噪 - 在"Prompt Speech Enhancement"复选框组件中提供的输入值 |
+| 5 | `temperature_input` | float | 否 | 0.7 | 温度系数 - 控制输出的随机性，较低值更稳定 |
+| 6 | `top_p_input` | float | 否 | 0.9 | Top-P 核采样阈值 - 控制生成多样性 |
+| 7 | `min_length_input` | float | 否 | 10 | 最小生成长度 - 生成的最少 token 数 |
+| 8 | `max_length_input` | float | 否 | 200 | 最大生成长度 - 生成的最大 token 数 |
+| 9 | `repetition_penalty_input` | float | 否 | 1.1 | 重复惩罚 - 大于1时减少重复片段 |
+| 10 | `do_normalize` | bool | 否 | False | 文本正则化 - 在"Text Normalization"复选框组件中提供的输入值 |
+| 11 | `denoise` | bool | 否 | False | 音频降噪 - 在"Prompt Speech Enhancement"复选框组件中提供的输入值 |
 
 #### 返回值
 | 字段名 | 类型 | 描述 |

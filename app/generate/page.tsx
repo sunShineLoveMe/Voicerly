@@ -22,6 +22,11 @@ export default function GeneratePage() {
   const [textNormalization, setTextNormalization] = useState(false)
   const [cfgValue, setCfgValue] = useState(2)
   const [inferenceSteps, setInferenceSteps] = useState(10)
+  const [temperature, setTemperature] = useState(0.7)
+  const [topP, setTopP] = useState(0.9)
+  const [minLength, setMinLength] = useState(10)
+  const [maxLength, setMaxLength] = useState(200)
+  const [repetitionPenalty, setRepetitionPenalty] = useState(1.1)
   
   // 添加生成音频的状态管理
   const [generatedAudio, setGeneratedAudio] = useState<{ url: string; filename: string; mimeType: string; size: number; source: string } | null>(null)
@@ -101,6 +106,11 @@ export default function GeneratePage() {
                 inferenceSteps={inferenceSteps}
                 textNormalization={textNormalization}
                 speechEnhancement={speechEnhancement}
+                temperature={temperature}
+                topP={topP}
+                minLength={minLength}
+                maxLength={maxLength}
+                repetitionPenalty={repetitionPenalty}
                 onAudioGenerated={setGeneratedAudio}
               />
             </div>
@@ -115,6 +125,16 @@ export default function GeneratePage() {
                 setInferenceSteps={setInferenceSteps}
                 textNormalization={textNormalization}
                 setTextNormalization={setTextNormalization}
+                temperature={temperature}
+                setTemperature={setTemperature}
+                topP={topP}
+                setTopP={setTopP}
+                minLength={minLength}
+                setMinLength={setMinLength}
+                maxLength={maxLength}
+                setMaxLength={setMaxLength}
+                repetitionPenalty={repetitionPenalty}
+                setRepetitionPenalty={setRepetitionPenalty}
                 generatedAudio={generatedAudio}
               />
             </div>

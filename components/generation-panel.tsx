@@ -20,6 +20,11 @@ interface GenerationPanelProps {
   inferenceSteps?: number
   textNormalization?: boolean
   speechEnhancement?: boolean
+  temperature?: number
+  topP?: number
+  minLength?: number
+  maxLength?: number
+  repetitionPenalty?: number
   // 音频生成回调
   onAudioGenerated?: (audio: DownloadedAudio | null) => void
 }
@@ -36,6 +41,11 @@ export function GenerationPanel({
   inferenceSteps = 10,
   textNormalization = false,
   speechEnhancement = false,
+  temperature = 0.7,
+  topP = 0.9,
+  minLength = 10,
+  maxLength = 200,
+  repetitionPenalty = 1.1,
   onAudioGenerated
 }: GenerationPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false)
@@ -103,6 +113,11 @@ export function GenerationPanel({
         prompt_text_input: promptText || null,
         cfg_value_input: cfgValue,
         inference_timesteps_input: inferenceSteps,
+        temperature_input: temperature,
+        top_p_input: topP,
+        min_length_input: minLength,
+        max_length_input: maxLength,
+        repetition_penalty_input: repetitionPenalty,
         do_normalize: textNormalization,
         denoise: speechEnhancement
       }

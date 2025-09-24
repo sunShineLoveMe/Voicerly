@@ -19,6 +19,16 @@ interface ConfigurationPanelProps {
   setInferenceSteps: (value: number) => void
   textNormalization: boolean
   setTextNormalization: (value: boolean) => void
+  temperature: number
+  setTemperature: (value: number) => void
+  topP: number
+  setTopP: (value: number) => void
+  minLength: number
+  setMinLength: (value: number) => void
+  maxLength: number
+  setMaxLength: (value: number) => void
+  repetitionPenalty: number
+  setRepetitionPenalty: (value: number) => void
   generatedAudio?: DownloadedAudio | null
 }
 
@@ -30,6 +40,16 @@ export function ConfigurationPanel({
   setInferenceSteps,
   textNormalization,
   setTextNormalization,
+  temperature,
+  setTemperature,
+  topP,
+  setTopP,
+  minLength,
+  setMinLength,
+  maxLength,
+  setMaxLength,
+  repetitionPenalty,
+  setRepetitionPenalty,
   generatedAudio = null,
 }: ConfigurationPanelProps) {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -44,6 +64,16 @@ export function ConfigurationPanel({
       inferenceTitle: "Inference Timesteps",
       inferenceDescription:
         "Number of inference timesteps for generation (higher values may improve quality but slower)",
+      temperatureTitle: "Temperature",
+      temperatureDescription: "Balances creativity vs. determinism (lower = more deterministic)",
+      topPTitle: "Top P",
+      topPDescription: "Controls nucleus sampling diversity (higher = more diverse)",
+      minLengthTitle: "Min Length",
+      minLengthDescription: "Minimum tokens to generate before stopping",
+      maxLengthTitle: "Max Length",
+      maxLengthDescription: "Maximum tokens allowed for the generated speech",
+      repetitionPenaltyTitle: "Repetition Penalty",
+      repetitionPenaltyDescription: "Penalizes repeating phrases; >1 discourages repetition",
       textNormTitle: "Text Normalization",
       textNormDescription: "We use wetext library to normalize the input text.",
       outputTitle: "Output Audio",
@@ -58,6 +88,16 @@ export function ConfigurationPanel({
       cfgDescription: "较高的值增加对提示的遵循度，较低的值允许更多创造性",
       inferenceTitle: "推理时间步",
       inferenceDescription: "生成的推理时间步数（较高的值可能提高质量但速度较慢）",
+      temperatureTitle: "温度系数",
+      temperatureDescription: "控制创意与确定性的平衡（值越低越稳定）",
+      topPTitle: "Top P",
+      topPDescription: "控制核采样多样性（值越高越多样）",
+      minLengthTitle: "最小生成长度",
+      minLengthDescription: "在停止前至少生成多少个 token",
+      maxLengthTitle: "最大生成长度",
+      maxLengthDescription: "生成语音允许的最大 token 数",
+      repetitionPenaltyTitle: "重复惩罚",
+      repetitionPenaltyDescription: "大于 1 时可降低重复句子的概率",
       textNormTitle: "文本标准化",
       textNormDescription: "我们使用 wetext 库来标准化输入文本。",
       outputTitle: "输出音频",
@@ -74,6 +114,16 @@ export function ConfigurationPanel({
     cfgDescription,
     inferenceTitle,
     inferenceDescription,
+    temperatureTitle,
+    temperatureDescription,
+    topPTitle,
+    topPDescription,
+    minLengthTitle,
+    minLengthDescription,
+    maxLengthTitle,
+    maxLengthDescription,
+    repetitionPenaltyTitle,
+    repetitionPenaltyDescription,
     textNormTitle,
     textNormDescription,
     outputTitle,
@@ -159,6 +209,22 @@ export function ConfigurationPanel({
     return bars
   }
 
+  const handleMinLengthChange = (value: number) => {
+    const newValue = Math.round(value)
+    setMinLength(newValue)
+    if (newValue > maxLength) {
+      setMaxLength(newValue)
+    }
+  }
+
+  const handleMaxLengthChange = (value: number) => {
+    const newValue = Math.round(value)
+    setMaxLength(newValue)
+    if (newValue < minLength) {
+      setMinLength(newValue)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* CFG Value */}
@@ -237,6 +303,156 @@ export function ConfigurationPanel({
             >
               {textNormTitle}
             </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Temperature */}
+      <Card className="bg-card/50 border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-primary">{temperatureTitle}</h3>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">{temperature.toFixed(2)}</span>
+              <Badge variant="outline" className="text-xs">
+                0.7
+              </Badge>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{temperatureDescription}</p>
+          <div className="space-y-2">
+            <Slider
+              value={[temperature]}
+              onValueChange={(value) => setTemperature(Number(value[0].toFixed(2)))}
+              max={1.5}
+              min={0.1}
+              step={0.01}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0.1</span>
+              <span>1.5</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Top P */}
+      <Card className="bg-card/50 border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-primary">{topPTitle}</h3>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">{topP.toFixed(2)}</span>
+              <Badge variant="outline" className="text-xs">
+                0.9
+              </Badge>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{topPDescription}</p>
+          <div className="space-y-2">
+            <Slider
+              value={[topP]}
+              onValueChange={(value) => setTopP(Number(value[0].toFixed(2)))}
+              max={1}
+              min={0.1}
+              step={0.01}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0.1</span>
+              <span>1.0</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Min Length */}
+      <Card className="bg-card/50 border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-primary">{minLengthTitle}</h3>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">{minLength}</span>
+              <Badge variant="outline" className="text-xs">
+                10
+              </Badge>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{minLengthDescription}</p>
+          <div className="space-y-2">
+            <Slider
+              value={[minLength]}
+              onValueChange={(value) => setMinLength(Math.round(value[0]))}
+              max={100}
+              min={1}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>1</span>
+              <span>100</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Max Length */}
+      <Card className="bg-card/50 border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-primary">{maxLengthTitle}</h3>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">{maxLength}</span>
+              <Badge variant="outline" className="text-xs">
+                200
+              </Badge>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{maxLengthDescription}</p>
+          <div className="space-y-2">
+            <Slider
+              value={[maxLength]}
+              onValueChange={(value) => setMaxLength(Math.round(value[0]))}
+              max={400}
+              min={50}
+              step={5}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>50</span>
+              <span>400</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Repetition Penalty */}
+      <Card className="bg-card/50 border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-medium text-primary">{repetitionPenaltyTitle}</h3>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">{repetitionPenalty.toFixed(2)}</span>
+              <Badge variant="outline" className="text-xs">
+                1.1
+              </Badge>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{repetitionPenaltyDescription}</p>
+          <div className="space-y-2">
+            <Slider
+              value={[repetitionPenalty]}
+              onValueChange={(value) => setRepetitionPenalty(Number(value[0].toFixed(2)))}
+              max={2}
+              min={0.5}
+              step={0.01}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0.5</span>
+              <span>2.0</span>
+            </div>
           </div>
         </CardContent>
       </Card>
