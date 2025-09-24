@@ -224,6 +224,11 @@ export function VoiceUpload({
     } finally {
       setIsProcessingAudio(false)
     }
+    
+    // 自动进行语音识别
+    if (onTranscriptionUpdate) {
+      await performAutoTranscription(file)
+    }
   }
 
   // 清理音频URL
@@ -363,25 +368,28 @@ export function VoiceUpload({
     setVolume(1)
     setIsLooping(false)
     setIsProcessingAudio(false)
+    setIsTranscribing(false)
+    setTranscriptionError(null)
     
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
   }
 
-  const handleTranscribe = async () => {
-    if (!uploadedFile || !onTranscriptionUpdate) return
+  // 自动语音识别函数
+  const performAutoTranscription = async (file: File) => {
+    if (!onTranscriptionUpdate) return
 
     setIsTranscribing(true)
     setTranscriptionError(null)
 
     try {
-      console.log('Starting transcription for file:', uploadedFile.name)
-      const result = await recognizeVoice(uploadedFile)
-      console.log('Transcription result:', result)
+      console.log('Starting auto transcription for file:', file.name)
+      const result = await recognizeVoice(file)
+      console.log('Auto transcription result:', result)
       onTranscriptionUpdate(result.text)
     } catch (error) {
-      console.error('Voice recognition failed:', error)
+      console.error('Auto voice recognition failed:', error)
       const errorMessage = error instanceof Error ? error.message : transcriptionErrorText
       setTranscriptionError(errorMessage)
       
@@ -389,13 +397,19 @@ export function VoiceUpload({
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('无法连接')) {
         setTranscriptionError(
           language === "en" 
-            ? "Cannot connect to VoxCPM service. Please ensure the service is running on localhost:7860"
-            : "无法连接到VoxCPM服务。请确保服务在localhost:7860端口运行"
+            ? "Auto-transcription failed: Cannot connect to VoxCPM service. Please ensure the service is running on localhost:7860"
+            : "自动转录失败：无法连接到VoxCPM服务。请确保服务在localhost:7860端口运行"
         )
       }
     } finally {
       setIsTranscribing(false)
     }
+  }
+
+  // 手动语音识别函数（保留用于可能的手动重试）
+  const handleTranscribe = async () => {
+    if (!uploadedFile || !onTranscriptionUpdate) return
+    await performAutoTranscription(uploadedFile)
   }
 
   return (
@@ -450,12 +464,19 @@ export function VoiceUpload({
                 <h4 className="text-sm font-medium flex items-center">
                   <Volume2 className="w-4 h-4 mr-2 text-blue-400" />
                   Prompt Speech (Optional, or let VoxCPM Improvise)
+                  {isTranscribing && (
+                    <div className="ml-3 flex items-center text-xs text-blue-300">
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      {language === "en" ? "Transcribing..." : "转录中..."}
+                    </div>
+                  )}
                 </h4>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={removeUploadedFile}
                   className="text-white hover:bg-slate-700"
+                  aria-label={remove}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -648,28 +669,6 @@ export function VoiceUpload({
               <div className="mt-4 pt-3 border-t border-slate-700 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    {onTranscriptionUpdate && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleTranscribe}
-                        disabled={isTranscribing || serviceHealthy === false}
-                        className="bg-transparent border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50"
-                        title={serviceHealthy === false ? "VoxCPM service is not available" : ""}
-                        aria-label={transcribeButton}
-                      >
-                        {isTranscribing ? (
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        ) : (
-                          <Type className="w-4 h-4 mr-1" />
-                        )}
-                        {isTranscribing ? transcribing : transcribeButton}
-                        {serviceHealthy === false && (
-                          <span className="ml-1 text-red-400">⚠</span>
-                        )}
-                      </Button>
-                    )}
-                    
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -681,6 +680,26 @@ export function VoiceUpload({
                       <Volume2 className="w-4 h-4 mr-1" />
                       {recordButton}
                     </Button>
+                    
+                    {/* 转录重试按钮 - 仅在转录失败时显示 */}
+                    {transcriptionError && onTranscriptionUpdate && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleTranscribe}
+                        disabled={isTranscribing}
+                        className="bg-transparent border-yellow-600 text-yellow-400 hover:bg-yellow-900/50"
+                        title="Retry transcription"
+                        aria-label="Retry transcription"
+                      >
+                        {isTranscribing ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <Type className="w-4 h-4 mr-1" />
+                        )}
+                        {language === "en" ? "Retry" : "重试"}
+                      </Button>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -710,6 +729,11 @@ export function VoiceUpload({
                 
                 <div className="text-xs text-slate-400 text-center">
                   {uploadedFile.name} • {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                  {isTranscribing && (
+                    <div className="mt-1 text-blue-300">
+                      {language === "en" ? "Auto-transcribing audio..." : "自动转录音频中..."}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
