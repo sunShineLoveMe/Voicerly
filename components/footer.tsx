@@ -6,7 +6,7 @@ export function Footer({ language }: FooterProps) {
   const content = {
     en: {
       disclaimer: "Do not use for illegal or infringing purposes. All generated content is the user's responsibility.",
-      copyright: "© 2024 Voicerly. All rights reserved.",
+      copyright: "© 2025 Voicerly. All rights reserved.",
       links: {
         terms: "Terms of Service",
         privacy: "Privacy Policy",
@@ -15,7 +15,7 @@ export function Footer({ language }: FooterProps) {
     },
     zh: {
       disclaimer: "禁止用于违法或侵权用途。生成内容的法律责任由用户自行承担。",
-      copyright: "© 2024 Voicerly. 保留所有权利。",
+      copyright: "© 2025 Voicerly. 保留所有权利。",
       links: {
         terms: "服务条款",
         privacy: "隐私政策",
