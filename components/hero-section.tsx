@@ -52,22 +52,29 @@ export function HeroSection({ language }: HeroSectionProps) {
           <h2 className="text-2xl font-semibold">{stepsTitle}</h2>
         </div>
 
-        {/* Three-Step Process */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {steps.map((step, index) => (
-            <div key={index} className="text-center group">
-              <div className="relative mb-6">
-                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary/20 transition-colors">
-                  <step.icon className="w-10 h-10 text-primary" />
+        <div className="max-w-4xl mx-auto">
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-12 md:gap-6">
+            {steps.map((step, index) => {
+              const Icon = step.icon
+              return (
+                <div key={index} className="flex md:flex-col items-center md:items-center gap-4 md:gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 md:w-18 md:h-18 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                      <Icon className="w-9 h-9 text-primary" />
+                    </div>
+                    <div className="md:hidden flex-1 h-px bg-border" />
+                  </div>
+                  <div className="text-left md:text-center">
+                    <h3 className="text-lg font-semibold mb-1 md:mb-2">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground">{step.desc}</p>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className="md:block hidden w-24 h-px bg-border" />
+                  )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-10 left-full w-full h-0.5 bg-border -translate-x-1/2" />
-                )}
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-              <p className="text-muted-foreground">{step.desc}</p>
-            </div>
-          ))}
+              )
+            })}
+          </div>
         </div>
 
         <div className="text-center mt-16">
