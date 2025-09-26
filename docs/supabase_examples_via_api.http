@@ -1,0 +1,100 @@
+# Supabase API Examples
+# Use with VS Code REST Client or Insomnia
+
+### Variables
+@host = http://localhost:3000
+@email = test@example.com
+@password = StrongPass123!
+
+### 1. Create User (Admin)
+POST {{host}}/api/admin/create-user
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 2. Login User
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 3. Grant Signup Bonus (requires login token)
+POST {{host}}/api/rpc/grant-signup-bonus
+Authorization: Bearer {{access_token}}
+
+### 4. Deduct Credits (requires login token)
+POST {{host}}/api/rpc/deduct-credits
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "cost": 10,
+  "reason": "tts_generate"
+}
+
+### 5. Update Profile (requires login token)
+POST {{host}}/api/rpc/update-profile
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "p_display_name": "Alice"
+}
+
+### 6. Insert Job (requires login token)
+POST {{host}}/rest/v1/jobs
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+apikey: {{anon_key}}
+
+{
+  "status": "done",
+  "used_credits": 10,
+  "audio_url": "https://example.com/a.mp3",
+  "input_chars": 123,
+  "est_seconds": 8
+}
+
+### 7. Get User Profile (requires login token)
+GET {{host}}/rest/v1/profiles?select=display_name,credits
+Authorization: Bearer {{access_token}}
+apikey: {{anon_key}}
+
+### 8. Get Credit Transactions (requires login token)
+GET {{host}}/rest/v1/credit_transactions?select=delta,reason,created_at
+Authorization: Bearer {{access_token}}
+apikey: {{anon_key}}
+
+### 9. Get Jobs (requires login token)
+GET {{host}}/rest/v1/jobs?select=status,used_credits,audio_url,created_at
+Authorization: Bearer {{access_token}}
+apikey: {{anon_key}}
+
+### Example Workflow:
+# 1. First, create a user with the admin endpoint
+# 2. Login to get access_token
+# 3. Use access_token for all subsequent requests
+# 4. The user_id will be automatically filled by triggers when inserting jobs
+# 5. RLS policies ensure users can only access their own data
+
+### Error Handling:
+# All endpoints return consistent error format:
+# {
+#   "error": {
+#     "code": "ERROR_CODE",
+#     "message": "Human readable error message"
+#   }
+# }
+
+### Success Response Format:
+# {
+#   "success": true,
+#   "message": "Operation completed successfully",
+#   "data": { ... }
+# }

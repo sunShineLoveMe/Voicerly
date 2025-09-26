@@ -36,6 +36,7 @@
 - ✅ **自动转录功能** - 上传音频后自动识别文字
 - ✅ 交互式音频波形播放器 (拖拽、播放控制、音量调节)
 - ✅ 错误处理和用户反馈已实现
+- ✅ **Supabase 数据库集成** - 用户认证、积分管理、任务记录
 - 🔄 需要VoxCPM服务在 `http://localhost:7860` 运行
 
 ## 使用说明
@@ -48,12 +49,66 @@
 7. **生成语音**: 点击"生成语音"按钮开始合成
 8. **下载结果**: 生成完成后可以在Output Audio区域播放和下载音频文件（前端已自动下载音频并生成可播放URL，同时保留原始源路径用于调试）
 
+## Supabase 集成说明
+
+### 环境配置
+在项目根目录创建 `.env.local` 文件：
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://lejhjsgalirpnbinbgcc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+```
+
+### 数据库结构
+- **profiles**: 用户资料表 (id, email, display_name, credits)
+- **credit_transactions**: 积分交易记录 (user_id, delta, reason)
+- **jobs**: 任务记录表 (user_id, status, used_credits, audio_url)
+
+### RLS 策略
+- 用户只能访问自己的数据
+- 管理员可以创建用户和管理积分
+- 触发器自动填充 user_id
+
+### API 路由
+- `POST /api/admin/create-user` - 创建用户
+- `POST /api/auth/login` - 用户登录
+- `POST /api/rpc/grant-signup-bonus` - 发放注册奖励
+- `POST /api/rpc/deduct-credits` - 扣除积分
+- `POST /api/rpc/update-profile` - 更新用户资料
+
+### 测试脚本
+运行端到端测试：
+```bash
+pnpm ts-node scripts/sb_e2e.ts
+```
+
+### 前端集成示例
+```typescript
+// 用户登录
+const { data } = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
+})
+
+// 使用 access_token 调用 API
+const response = await fetch('/api/rpc/deduct-credits', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${access_token}`
+  },
+  body: JSON.stringify({ cost: 10, reason: 'tts_generate' })
+})
+```
+
 ## Development Notes
 - Components <500 lines, split by feature
 - No `any`, no eslint-disable
 - Tailwind classes use `cn()` merge
 - Deploy on Vercel, env vars in dashboard
 - Always show credits usage & reminders
+- Supabase integration with proper RLS and error handling
 
 ---
 
