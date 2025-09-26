@@ -1,5 +1,11 @@
 {
     "version": 2,
+    "rewrites": [
+        {
+          "source": "/api/voxcpm/(.*)",
+          "destination": "https://mouth-three-edinburgh-expo.trycloudflare.com/$1"
+        }
+      ],
     "headers": [
       {
         "source": "/(.*)",
