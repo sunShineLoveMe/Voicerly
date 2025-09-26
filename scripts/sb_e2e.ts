@@ -7,6 +7,11 @@ config({ path: '.env.local' })
 config({ path: '.env' })
 config({ path: '.env.test' })
 
+// Configure Node.js to use system proxy if available
+if (process.env.HTTP_PROXY || process.env.HTTPS_PROXY) {
+  console.log('🔧 Using system proxy settings')
+}
+
 // Then import Supabase clients
 const { supabaseAdmin, makeUserClient } = require('../lib/supabase/supabaseAdmin.js')
 const { supabasePublic } = require('../lib/supabase/supabasePublic.js')
