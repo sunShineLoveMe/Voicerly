@@ -12,21 +12,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = CreateUserSchema.parse(body)
 
-    // Check if user already exists
-    const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email)
+    // Check if user already exists by listing users
+    const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000
+    })
     
-    if (getUserError && getUserError.message !== 'User not found') {
+    if (getUserError) {
       return NextResponse.json(
         { error: { code: 'USER_CHECK_FAILED', message: getUserError.message } },
         { status: 500 }
       )
     }
 
-    if (existingUser?.user) {
+    const existingUser = users?.users?.find((user: any) => user.email === email)
+    if (existingUser) {
       return NextResponse.json({
         success: true,
         message: 'User already exists',
-        data: { id: existingUser.user.id, email: existingUser.user.email }
+        data: { id: existingUser.id, email: existingUser.email }
       })
     }
 

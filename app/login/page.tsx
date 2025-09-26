@@ -53,6 +53,8 @@ export default function LoginPage() {
         description: err.message || (language === "en" ? "Please check your credentials." : "请检查您的凭据。"),
         variant: "destructive",
       })
+      // Re-throw error to let AuthForm handle loading state
+      throw err
     }
   }
 

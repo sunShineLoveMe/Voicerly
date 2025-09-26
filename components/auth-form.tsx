@@ -155,9 +155,12 @@ export function AuthForm({ mode, language, onSubmit }: AuthFormProps) {
     } catch (error) {
       // Error handling is done in the parent component
       console.error('Form submission error:', error)
-    } finally {
-      setIsLoading(false)
+      // Don't reset loading state here, let parent component handle it
+      return
     }
+    
+    // Only reset loading state if no error occurred
+    setIsLoading(false)
   }
 
   return (

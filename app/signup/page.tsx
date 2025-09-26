@@ -72,6 +72,8 @@ export default function SignupPage() {
         description: err.message || (language === "en" ? "Please try again." : "请重试。"),
         variant: "destructive",
       })
+      // Re-throw error to let AuthForm handle loading state
+      throw err
     }
   }
 
