@@ -34,10 +34,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Login successful',
-      data: {
-        access_token: loginData.session.access_token,
-        user_id: loginData.user.id,
-        email: loginData.user.email
+      user: {
+        id: loginData.user.id,
+        email: loginData.user.email,
+        display_name: loginData.user.user_metadata?.display_name || loginData.user.email,
+        credits: 50, // Default credits, should be fetched from profiles table
+        access_token: loginData.session.access_token
       }
     })
 

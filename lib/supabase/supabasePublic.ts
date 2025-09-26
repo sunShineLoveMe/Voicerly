@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js')
+import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -12,6 +12,4 @@ if (!supabaseAnonKey) {
 }
 
 // Public client with anon key - respects RLS
-const supabasePublic = createClient(supabaseUrl, supabaseAnonKey)
-
-module.exports = { supabasePublic }
+export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey)

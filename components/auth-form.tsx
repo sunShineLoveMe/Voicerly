@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, Mail, Lock, User, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
 interface AuthFormProps {
@@ -25,6 +26,7 @@ export function AuthForm({ mode, language, onSubmit }: AuthFormProps) {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   const content = {
     en: {
@@ -104,39 +106,58 @@ export function AuthForm({ mode, language, onSubmit }: AuthFormProps) {
 
     // Basic validation
     if (mode === "signup" && !formData.name.trim()) {
-      alert(validation.nameRequired)
+      toast({
+        title: language === "en" ? "Validation Error" : "验证错误",
+        description: validation.nameRequired,
+        variant: "destructive",
+      })
       setIsLoading(false)
       return
     }
 
     if (!formData.email.trim()) {
-      alert(validation.emailRequired)
+      toast({
+        title: language === "en" ? "Validation Error" : "验证错误",
+        description: validation.emailRequired,
+        variant: "destructive",
+      })
       setIsLoading(false)
       return
     }
 
     if (!formData.password.trim()) {
-      alert(validation.passwordRequired)
+      toast({
+        title: language === "en" ? "Validation Error" : "验证错误",
+        description: validation.passwordRequired,
+        variant: "destructive",
+      })
       setIsLoading(false)
       return
     }
 
     if (formData.password.length < 8) {
-      alert(validation.passwordTooShort)
+      toast({
+        title: language === "en" ? "Validation Error" : "验证错误",
+        description: validation.passwordTooShort,
+        variant: "destructive",
+      })
       setIsLoading(false)
       return
     }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    onSubmit({
-      email: formData.email,
-      password: formData.password,
-      ...(mode === "signup" && { name: formData.name }),
-    })
-
-    setIsLoading(false)
+    try {
+      // Call the actual onSubmit function
+      await onSubmit({
+        email: formData.email,
+        password: formData.password,
+        ...(mode === "signup" && { name: formData.name }),
+      })
+    } catch (error) {
+      // Error handling is done in the parent component
+      console.error('Form submission error:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

@@ -1,32 +1,78 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { AuthForm } from "@/components/auth-form"
 import { useLanguage } from "@/hooks/use-language"
+import { useAuth } from "@/hooks/use-auth"
+import { useToast } from "@/hooks/use-toast"
 
 export default function SignupPage() {
   const { language, setLanguage } = useLanguage()
+  const { login } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
-  const handleSignup = (data: { email: string; password: string; name?: string }) => {
-    // In a real app, this would create account with a backend
-    console.log("Signup attempt:", data)
+  const handleSignup = async (data: { email: string; password: string; name?: string }) => {
+    try {
+      // Call Supabase create user API
+      const response = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          display_name: data.name,
+        }),
+      })
 
-    // Simulate successful signup with free credits
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        email: data.email,
-        name: data.name,
-        credits: 10, // Free trial credits
-        isNewUser: true,
-      }),
-    )
+      const result = await response.json()
 
-    // Redirect to dashboard
-    router.push("/generate")
+      if (!response.ok) {
+        throw new Error(result.error?.message || 'Signup failed')
+      }
+
+      // Create user successful, now login
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      })
+
+      const loginResult = await loginResponse.json()
+
+      if (!loginResponse.ok) {
+        throw new Error(loginResult.error?.message || 'Auto-login failed')
+      }
+
+      // Login successful, update auth state
+      login(loginResult.user)
+      
+      // Show success message
+      toast({
+        title: language === "en" ? "Account Created" : "账户创建成功",
+        description: language === "en" ? "Welcome to Voicerly!" : "欢迎使用 Voicerly！",
+      })
+      
+      // Redirect to generate page
+      router.push("/generate")
+    } catch (err: any) {
+      console.error('Signup error:', err)
+      toast({
+        title: language === "en" ? "Signup Failed" : "注册失败",
+        description: err.message || (language === "en" ? "Please try again." : "请重试。"),
+        variant: "destructive",
+      })
+    }
   }
 
   return (

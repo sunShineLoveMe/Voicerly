@@ -9,7 +9,7 @@ import { TargetTextInput } from "@/components/target-text-input"
 import { GenerationPanel } from "@/components/generation-panel"
 import { Badge } from "@/components/ui/badge"
 import { ConfigurationPanel } from "@/components/configuration-panel"
-import { AuthPrompt } from "@/components/auth-prompt"
+import { AuthDialog } from "@/components/auth-dialog"
 import { useLanguage } from "@/hooks/use-language"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -20,8 +20,8 @@ export default function GeneratePage() {
   const [promptText, setPromptText] = useState<string>("")
   const [targetText, setTargetText] = useState<string>("")
   
-  // Use real user credits or default to 0
-  const credits = user?.credits || 0
+  // Use real user credits or show trial credits for unauthenticated users
+  const credits = user?.credits || (isAuthenticated ? 0 : 50)
 
   const [speechEnhancement, setSpeechEnhancement] = useState(true)
   const [textNormalization, setTextNormalization] = useState(false)
@@ -30,6 +30,10 @@ export default function GeneratePage() {
   
   // 添加生成音频的状态管理
   const [generatedAudio, setGeneratedAudio] = useState<{ url: string; filename: string; mimeType: string; size: number; source: string } | null>(null)
+  
+  // 认证对话框状态
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const [authTrigger, setAuthTrigger] = useState<string>("")
 
   const canGenerate = Boolean(
     uploadedFile && 
@@ -37,7 +41,22 @@ export default function GeneratePage() {
     (typeof targetText === 'string' && targetText.trim().length > 0)
   )
 
+  const handleFileUpload = (file: File | null) => {
+    if (file && !isAuthenticated) {
+      setAuthTrigger(language === "en" ? "upload audio files" : "上传音频文件")
+      setShowAuthDialog(true)
+      return
+    }
+    setUploadedFile(file)
+  }
+
   const handleGenerate = () => {
+    if (!isAuthenticated) {
+      setAuthTrigger(language === "en" ? "generate audio" : "生成音频")
+      setShowAuthDialog(true)
+      return
+    }
+    
     if (canGenerate && credits > 0) {
       // TODO: Implement actual credit deduction via API
       console.log("Generating audio...")
@@ -68,11 +87,6 @@ export default function GeneratePage() {
     )
   }
 
-  // Show auth prompt if user is not authenticated
-  if (!isAuthenticated) {
-    return <AuthPrompt language={language} />
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation language={language} onLanguageChange={setLanguage} />
@@ -93,7 +107,7 @@ export default function GeneratePage() {
             <div className="space-y-6">
               <VoiceUpload
                 language={language}
-                onFileUpload={setUploadedFile}
+                onFileUpload={handleFileUpload}
                 uploadedFile={uploadedFile}
                 speechEnhancement={speechEnhancement}
                 setSpeechEnhancement={setSpeechEnhancement}
@@ -148,6 +162,14 @@ export default function GeneratePage() {
       </main>
 
       <Footer language={language} />
+      
+      {/* 认证对话框 */}
+      <AuthDialog
+        language={language}
+        isOpen={showAuthDialog}
+        onClose={() => setShowAuthDialog(false)}
+        trigger={authTrigger}
+      />
     </div>
   )
 }
