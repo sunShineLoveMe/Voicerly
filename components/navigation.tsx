@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/hooks/use-auth"
 
 interface NavigationProps {
   language: "en" | "zh"
@@ -20,18 +21,10 @@ interface NavigationProps {
 
 export function Navigation({ language, onLanguageChange }: NavigationProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const { user, logout } = useAuth()
   const router = useRouter()
 
   console.log("language切换", language)
-
-  useEffect(() => {
-    // Check for logged in user
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
-    }
-  }, [])
 
   const navItems = {
     en: [
@@ -66,8 +59,7 @@ export function Navigation({ language, onLanguageChange }: NavigationProps) {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("user")
-    setUser(null)
+    logout()
     router.push("/")
   }
 
@@ -116,7 +108,7 @@ export function Navigation({ language, onLanguageChange }: NavigationProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
                     <User className="w-4 h-4 mr-2" />
-                    {user.name || user.email}
+                    {user.display_name || user.email}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -171,7 +163,7 @@ export function Navigation({ language, onLanguageChange }: NavigationProps) {
                 {user ? (
                   <div className="flex flex-col space-y-2 w-full">
                     <div className="text-sm text-muted-foreground">
-                      {user.name || user.email} ({authLabels[language].credits}: {user.credits})
+                      {user.display_name || user.email} ({authLabels[language].credits}: {user.credits})
                     </div>
                     <Button variant="ghost" size="sm" className="justify-start" onClick={() => router.push("/account")}>
                       {authLabels[language].account}

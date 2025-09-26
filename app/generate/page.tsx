@@ -9,14 +9,19 @@ import { TargetTextInput } from "@/components/target-text-input"
 import { GenerationPanel } from "@/components/generation-panel"
 import { Badge } from "@/components/ui/badge"
 import { ConfigurationPanel } from "@/components/configuration-panel"
+import { AuthPrompt } from "@/components/auth-prompt"
 import { useLanguage } from "@/hooks/use-language"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function GeneratePage() {
   const { language, setLanguage } = useLanguage()
+  const { user, isLoading, isAuthenticated } = useAuth()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [promptText, setPromptText] = useState<string>("")
   const [targetText, setTargetText] = useState<string>("")
-  const [credits, setCredits] = useState(50)
+  
+  // Use real user credits or default to 0
+  const credits = user?.credits || 0
 
   const [speechEnhancement, setSpeechEnhancement] = useState(true)
   const [textNormalization, setTextNormalization] = useState(false)
@@ -34,7 +39,8 @@ export default function GeneratePage() {
 
   const handleGenerate = () => {
     if (canGenerate && credits > 0) {
-      setCredits(credits - 1)
+      // TODO: Implement actual credit deduction via API
+      console.log("Generating audio...")
     }
   }
 
@@ -46,6 +52,25 @@ export default function GeneratePage() {
   const creditsLabel = {
     en: "Credits",
     zh: "积分余额",
+  }
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
+            {language === "en" ? "Loading..." : "加载中..."}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show auth prompt if user is not authenticated
+  if (!isAuthenticated) {
+    return <AuthPrompt language={language} />
   }
 
   return (
