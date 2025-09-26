@@ -432,8 +432,8 @@ export function VoiceUpload({
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('无法连接')) {
         setTranscriptionError(
           language === "en" 
-            ? "Auto-transcription failed: Cannot connect to VoxCPM service. Please ensure the service is running on localhost:7860"
-            : "自动转录失败：无法连接到VoxCPM服务。请确保服务在localhost:7860端口运行"
+            ? "Auto-transcription failed: Cannot connect to VoxCPM service. Please ensure the service is running."
+            : "自动转录失败：无法连接到VoxCPM服务。请确保服务正在运行。"
         )
       }
     } finally {

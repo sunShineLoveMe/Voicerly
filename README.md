@@ -303,6 +303,93 @@ const response = await fetch('/api/rpc/deduct-credits', {
 - Always show credits usage & reminders
 - Supabase integration with proper RLS and error handling
 
+## 🚀 部署指南
+
+### 环境变量配置
+
+#### 必需的环境变量
+```bash
+# Supabase 配置
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# 外部后端代理配置
+NEXT_PUBLIC_API_BASE=https://your-public-backend.example.com
+```
+
+#### 可选的环境变量
+```bash
+# 健康检查开关（生产环境默认关闭）
+NEXT_PUBLIC_ENABLE_HEALTH_CHECK=1
+
+# 调试模式
+NEXT_PUBLIC_DEBUG_MODE=1
+```
+
+### 外部后端代理
+
+- **统一入口**: 所有外部后端请求统一走相对路径 `/api/*`（不要写绝对域名）
+- **Next.js 代理**: 在 `next.config.js` 中通过 `rewrites` 把 `/api/*` 代理到 `NEXT_PUBLIC_API_BASE` 指定的地址
+- **生产环境设置**:
+  - `NEXT_PUBLIC_API_BASE=https://your-public-backend.example.com`
+  - 可选：`NEXT_PUBLIC_ENABLE_HEALTH_CHECK=1` （默认关闭健康检查）
+- **内部 API Routes**: 如 `/api/auth/*` 不经过代理，不要改它们的路径
+
+### Vercel 部署
+
+1. **连接 GitHub 仓库**:
+   ```bash
+   vercel login
+   vercel --prod
+   ```
+
+2. **配置环境变量**:
+   - 在 Vercel 控制台 → Project Settings → Environment Variables
+   - 添加所有必需的环境变量
+
+3. **配置自定义域名**:
+   - 在 Vercel 控制台 → Domains
+   - 添加子域名（如 `voicerly.zhiyunllm.com`）
+   - 在 Namecheap 中配置 DNS 记录指向 Vercel
+
+4. **CORS 配置**:
+   - 确保外部后端 CORS 白名单包含：
+     - `https://voicerly.zhiyunllm.com`
+     - `https://*.vercel.app`
+
+### 本地开发
+
+```bash
+# 安装依赖
+pnpm install
+
+# 启动开发服务器
+pnpm dev
+
+# 构建生产版本
+pnpm build
+
+# 启动生产服务器
+pnpm start
+```
+
+### 测试部署
+
+1. **本地测试**:
+   ```bash
+   pnpm dev
+   # 访问 http://localhost:3000
+   # 检查网络面板 /api/* 是否正确命中代理
+   ```
+
+2. **生产测试**:
+   - 访问 `https://voicerly.zhiyunllm.com`
+   - 检查网络面板 `/api/*` 指向外部后端
+   - 确认无 CORS 报错
+   - 测试登录/注册功能
+   - 测试语音生成功能
+
 ## 📞 支持与联系
 - **测试报告**: `docs/supabase_sdk_test_report.md`
 - **集成指南**: `docs/supabase_integration_guide.md`

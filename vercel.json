@@ -1,11 +1,5 @@
 {
     "version": 2,
-    "rewrites": [
-      {
-        "source": "/api/(.*)",
-        "destination": "${NEXT_PUBLIC_API_BASE}/$1"
-      }
-    ],
     "headers": [
       {
         "source": "/(.*)",

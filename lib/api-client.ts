@@ -3,6 +3,9 @@
  * 封装与VoxCPM服务的所有API交互
  */
 
+import { apiFetch, getExternalApiBase } from './api'
+import { shouldPerformHealthCheck, getExternalApiUrl } from './flags'
+
 export interface VoiceGenerationParams {
   text_input: string
   prompt_wav_path_input?: File | string | null
@@ -33,8 +36,8 @@ export class VoxCPMClient {
   private baseUrl: string
   private client: any = null
 
-  constructor(baseUrl: string = 'http://localhost:7860') {
-    this.baseUrl = baseUrl
+  constructor(baseUrl?: string) {
+    this.baseUrl = baseUrl || getExternalApiBase()
   }
 
   /**
@@ -61,10 +64,12 @@ export class VoxCPMClient {
    */
   async generateVoice(params: VoiceGenerationParams): Promise<VoiceGenerationResponse> {
     try {
-      // 首先检查服务是否可用
-      const isHealthy = await this.checkHealth()
-      if (!isHealthy) {
-        throw new Error('VoxCPM服务不可用。请确保服务正在localhost:7860运行。')
+      // 首先检查服务是否可用（仅在需要时执行健康检查）
+      if (shouldPerformHealthCheck()) {
+        const isHealthy = await this.checkHealth()
+        if (!isHealthy) {
+          throw new Error('VoxCPM服务不可用。请确保服务正在运行。')
+        }
       }
 
       const client = await this.initClient()
@@ -134,15 +139,15 @@ export class VoxCPMClient {
 
     // 如果已经是 /file= 开头，直接拼接
     if (normalizedPath.startsWith('/file=')) {
-      return `${this.baseUrl}${normalizedPath}`
+      return getExternalApiUrl(normalizedPath)
     }
 
     if (normalizedPath.startsWith('file=')) {
-      return `${this.baseUrl}/${normalizedPath}`
+      return getExternalApiUrl(`/${normalizedPath}`)
     }
 
     const encodedPath = encodeURI(normalizedPath)
-    return `${this.baseUrl}/file=${encodedPath}`
+    return getExternalApiUrl(`/file=${encodedPath}`)
   }
 
   private extractFilepath(data: unknown): string {
@@ -266,7 +271,8 @@ export class VoxCPMClient {
    */
   async checkHealth(): Promise<boolean> {
     try {
-      const response = await fetch(this.baseUrl)
+      // 使用相对路径进行健康检查，通过 Next.js rewrites 代理
+      const response = await apiFetch('')
       return response.ok
     } catch (error) {
       console.error('Health check failed:', error)

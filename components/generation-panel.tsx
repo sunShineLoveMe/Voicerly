@@ -89,7 +89,7 @@ export function GenerationPanel({
       const { checkVoxCPMHealth } = await import('@/lib/api-client')
       const isHealthy = await checkVoxCPMHealth()
       if (!isHealthy) {
-        throw new Error('VoxCPM服务未运行。请确保服务在localhost:7860端口启动。')
+        throw new Error('VoxCPM服务未运行。请确保服务正在启动。')
       }
       // 模拟进度更新
       progressInterval = setInterval(() => {
