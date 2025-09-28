@@ -1,108 +1,63 @@
 // app/api/voxcpm/[...path]/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'GET')
+const BASE = process.env.VOXCPM_BASE_URL;
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS,HEAD',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+function makeTargetURL(segments: string[] | undefined, search: string) {
+  if (!BASE) throw new Error('VOXCPM_BASE_URL is not set');
+  const path = segments && segments.length ? segments.join('/') : '';
+  const base = BASE.replace(/\/+$/, '');
+  return `${base}/${path}${search ? `?${search}` : ''}`;
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'POST')
-}
+async function proxy(req: Request, ctx: { params: { path?: string[] } }) {
+  const url = new URL(req.url);
+  const target = makeTargetURL(ctx.params?.path, url.searchParams.toString());
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'PUT')
-}
+  const headers = new Headers(req.headers);
+  headers.delete('host');
+  headers.delete('content-length');
+  headers.delete('connection');
+  headers.delete('accept-encoding'); // 避免压缩引发的问题
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'DELETE')
-}
-
-export async function HEAD(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'HEAD')
-}
-
-export async function OPTIONS(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return handleRequest(request, params.path, 'OPTIONS')
-}
-
-async function handleRequest(
-  request: NextRequest,
-  pathSegments: string[],
-  method: string
-) {
-  const targetBase = process.env.VOXCPM_BASE_URL
-  if (!targetBase) {
-    return NextResponse.json({ error: 'VOXCPM_BASE_URL is not set' }, { status: 500 })
-  }
-
-  const slug = pathSegments || []
-  const search = request.url.includes('?') ? '?' + request.url.split('?')[1] : ''
-  const url = `${targetBase}/${slug.join('/')}${search}`
-
-  // 透传请求头（去掉 host，改成目标 host）
-  const headers = new Headers()
-  for (const [k, v] of request.headers.entries()) {
-    // 这两类头让上游决定
-    if (k.toLowerCase() === 'host') continue
-    headers.set(k, v)
-  }
-  headers.set('host', new URL(targetBase).host)
-
-  // 某些端点不支持 HEAD（/config），把 HEAD 改为 GET，但等价返回
-  const actualMethod = method === 'HEAD' ? 'GET' : method
-
-  const upstream = await fetch(url, {
-    method: actualMethod,
+  const upstream = await fetch(target, {
+    method: req.method,
     headers,
-    body: method === 'GET' || method === 'HEAD' ? undefined : request.body,
-  }).catch((e) => {
-    return NextResponse.json({ error: 'Upstream fetch error', detail: String(e) }, { status: 502 })
-  })
+    body:
+      req.method === 'GET' || req.method === 'HEAD'
+        ? undefined
+        : await req.arrayBuffer(),
+    cache: 'no-store',
+    redirect: 'manual',
+  });
 
-  if (!upstream) return
+  const respHeaders: Record<string, string> = {};
+  upstream.headers.forEach((v, k) => (respHeaders[k] = v));
+  Object.assign(respHeaders, corsHeaders);
 
-  // 设置响应头 & 状态码
-  const responseHeaders = new Headers()
-  upstream.headers.forEach((v, k) => responseHeaders.set(k, v))
-  // 不缓存
-  responseHeaders.set('Cache-Control', 'no-store, private, max-age=0, must-revalidate')
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: respHeaders,
+  });
+}
 
-  if (method === 'HEAD') {
-    // HEAD：不回 body
-    return new NextResponse(null, {
-      status: upstream.status,
-      headers: responseHeaders,
-    })
-  }
-
-  // 流式转发 body
-  if (upstream.body) {
-    return new NextResponse(upstream.body, {
-      status: upstream.status,
-      headers: responseHeaders,
-    })
-  } else {
-    return new NextResponse(null, {
-      status: upstream.status,
-      headers: responseHeaders,
-    })
-  }
+export async function GET(req: Request, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function POST(req: Request, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function OPTIONS() {
+  return new Response(null, { headers: corsHeaders });
+}
+export async function HEAD(req: Request, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
 }
