@@ -5,6 +5,7 @@
 
 import { apiFetch, getExternalApiBase } from './api'
 import { shouldPerformHealthCheck, getExternalApiUrl } from './flags'
+import { getClientVoxcpmAbsBase } from './voxcpmBase'
 
 export interface VoiceGenerationParams {
   text_input: string
@@ -50,7 +51,9 @@ export class VoxCPMClient {
     try {
       // 动态导入Gradio客户端
       const { Client } = await import('@gradio/client')
-      this.client = await Client.connect(this.baseUrl)
+      // 使用绝对 URL 避免 Gradio 报 Invalid URL 错误
+      const absUrl = typeof window !== 'undefined' ? getClientVoxcpmAbsBase() : this.baseUrl
+      this.client = await Client.connect(absUrl)
       return this.client
     } catch (error) {
       console.error('Failed to initialize Gradio client:', error)
@@ -271,8 +274,9 @@ export class VoxCPMClient {
    */
   async checkHealth(): Promise<boolean> {
     try {
-      // 使用相对路径进行健康检查，通过 Next.js rewrites 代理
-      const response = await apiFetch('')
+      // 使用 GET 请求进行健康检查，避免 HEAD 请求被拒绝
+      const base = getClientVoxcpmBase()
+      const response = await fetch(`${base}/config`, { method: 'GET' })
       return response.ok
     } catch (error) {
       console.error('Health check failed:', error)

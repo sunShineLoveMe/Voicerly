@@ -1,4 +1,4 @@
-import { PUBLIC_VOXCPM_BASE } from '@/lib/env';
+import { getClientVoxcpmBase, getServerVoxcpmBase } from '@/lib/voxcpmBase';
 /**
  * 环境标志和配置
  * 用于控制不同环境下的功能开关
@@ -30,7 +30,9 @@ export function shouldPerformHealthCheck(): boolean {
  * @returns 完整的 API URL
  */
 export function getExternalApiUrl(path: string): string {
-  const base = PUBLIC_VOXCPM_BASE; // 仍然只走 /api/voxcpm
+  const base = typeof window !== 'undefined'
+    ? getClientVoxcpmBase()
+    : getServerVoxcpmBase()
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${cleanPath}`;
 }

@@ -1,4 +1,4 @@
-import { PUBLIC_VOXCPM_BASE } from '@/lib/env';
+import { getClientVoxcpmBase, getServerVoxcpmBase } from '@/lib/voxcpmBase';
 /**
  * 统一的 API 请求封装
  * 自动处理相对路径和错误状态
@@ -63,5 +63,10 @@ export async function apiRequest<T = any>(
  * 用于需要直接访问外部后端 URL 的场景（如文件下载）
  */
 export function getExternalApiBase(): string {
-  return PUBLIC_VOXCPM_BASE; // 只走 /api/voxcpm
+  // 浏览器环境：/api/voxcpm（再转绝对）
+  if (typeof window !== 'undefined') {
+    return getClientVoxcpmBase()
+  }
+  // 服务器环境：直接用隧道域名
+  return getServerVoxcpmBase()
 }

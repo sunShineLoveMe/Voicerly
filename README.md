@@ -99,9 +99,22 @@
 ### 🔧 环境配置
 在项目根目录创建 `.env.local` 文件：
 ```bash
+# Supabase 配置
 NEXT_PUBLIC_SUPABASE_URL=https://lejhjsgalirpnbinbgcc.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# Server-side: Vercel Function 代理到 Cloudflare Tunnel
+VOXCPM_BASE_URL=https://voxcpm.zhiyunllm.com
+
+# Client-side: 前端同源基路径（交给代理）
+NEXT_PUBLIC_VOXCPM_BASE=/api/voxcpm
+
+# 健康检查开关（生产环境默认关闭）
+NEXT_PUBLIC_ENABLE_HEALTH_CHECK=1
+
+# 调试模式
+NEXT_PUBLIC_DEBUG_MODE=1
 ```
 
 ### 🗄️ 数据库结构 (已部署)
@@ -389,6 +402,35 @@ pnpm start
    - 确认无 CORS 报错
    - 测试登录/注册功能
    - 测试语音生成功能
+
+3. **代理验证**:
+   ```bash
+   # 验证代理是否正常工作
+   curl https://voicerly.zhiyunllm.com/api/voxcpm/config
+   # 应该返回 VoxCPM 服务的配置信息
+   ```
+
+### 🔄 VoxCPM 代理配置
+
+#### 环境变量说明
+- **VOXCPM_BASE_URL**: 服务端环境变量，指向 Cloudflare Tunnel 地址
+- **NEXT_PUBLIC_VOXCPM_BASE**: 客户端环境变量，前端使用相对路径 `/api/voxcpm`
+
+#### 代理工作原理
+1. **前端请求**: 所有 VoxCPM API 请求都发送到 `/api/voxcpm/*`
+2. **Next.js 代理**: 通过 `pages/api/voxcpm/[...path].ts` 或 `app/api/voxcpm/[...path]/route.ts` 代理
+3. **转发到上游**: 代理将请求转发到 `VOXCPM_BASE_URL` 指定的地址
+4. **流式响应**: 支持流式数据传输，保持原始响应格式
+
+#### 本地开发设置
+1. **启动 VoxCPM 服务**: 确保在本地 7860 端口运行
+2. **设置环境变量**: 在 `.env.local` 中配置 `VOXCPM_BASE_URL=http://localhost:7860`
+3. **测试代理**: 访问 `http://localhost:3000/api/voxcpm/config` 验证代理工作
+
+#### 生产环境设置
+1. **Vercel 环境变量**: 在 Vercel 控制台设置 `VOXCPM_BASE_URL=https://voxcpm.zhiyunllm.com`
+2. **Cloudflare Tunnel**: 确保 VoxCPM 服务通过 Cloudflare Tunnel 可访问
+3. **CORS 配置**: 确保上游服务允许来自 Vercel 域名的请求
 
 ## 📞 支持与联系
 - **测试报告**: `docs/supabase_sdk_test_report.md`
