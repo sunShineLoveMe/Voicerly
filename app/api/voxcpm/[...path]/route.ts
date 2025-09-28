@@ -73,8 +73,6 @@ async function handleRequest(
     method: actualMethod,
     headers,
     body: method === 'GET' || method === 'HEAD' ? undefined : request.body,
-    // 保持流式
-    duplex: 'half' as any,
   }).catch((e) => {
     return NextResponse.json({ error: 'Upstream fetch error', detail: String(e) }, { status: 502 })
   })

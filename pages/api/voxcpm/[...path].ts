@@ -31,8 +31,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     method,
     headers,
     body: method === 'GET' || method === 'HEAD' ? undefined : (req as any),
-    // 保持流式
-    duplex: 'half' as any,
   }).catch((e) => {
     res.status(502).json({ error: 'Upstream fetch error', detail: String(e) })
     return null

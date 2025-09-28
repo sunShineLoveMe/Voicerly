@@ -19,6 +19,11 @@ export function getServerVoxcpmBase(): string {
  * 将相对路径转换为绝对 URL，避免 Gradio 报 Invalid URL
  */
 export function getClientVoxcpmAbsBase(): string {
+  // 仅在浏览器环境使用
+  if (typeof window === 'undefined') {
+    throw new Error('getClientVoxcpmAbsBase can only be used in browser environment')
+  }
+  
   const base = process.env.NEXT_PUBLIC_VOXCPM_BASE || '/api/voxcpm'
   // 转为绝对 URL，避免 Gradio 报 Invalid URL
   const abs = new URL(base, window.location.origin).toString()
