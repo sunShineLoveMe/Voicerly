@@ -30,9 +30,9 @@ export function shouldPerformHealthCheck(): boolean {
  * @returns 完整的 API URL
  */
 export function getExternalApiUrl(path: string): string {
-  const base = typeof window !== 'undefined'
-    ? getClientVoxcpmBase()
-    : getServerVoxcpmBase()
+  const base = typeof window === 'undefined'
+    ? getServerVoxcpmBase()
+    : getClientVoxcpmBase()
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${cleanPath}`;
 }

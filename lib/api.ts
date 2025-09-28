@@ -63,10 +63,7 @@ export async function apiRequest<T = any>(
  * 用于需要直接访问外部后端 URL 的场景（如文件下载）
  */
 export function getExternalApiBase(): string {
-  // 浏览器环境：/api/voxcpm（再转绝对）
-  if (typeof window !== 'undefined') {
-    return getClientVoxcpmBase()
-  }
-  // 服务器环境：直接用隧道域名
-  return getServerVoxcpmBase()
+  return typeof window === 'undefined'
+    ? getServerVoxcpmBase()
+    : getClientVoxcpmBase()
 }

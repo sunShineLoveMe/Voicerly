@@ -275,8 +275,21 @@ export class VoxCPMClient {
   async checkHealth(): Promise<boolean> {
     try {
       // 使用 GET 请求进行健康检查，避免 HEAD 请求被拒绝
-      const base = getClientVoxcpmBase()
-      const response = await fetch(`${base}/config`, { method: 'GET' })
+      if (typeof window === 'undefined') {
+        const base = getExternalApiBase()
+        const response = await fetch(`${base}/config`, { method: 'GET' })
+        return response.ok
+      }
+
+      let abs: string
+      try {
+        abs = getClientVoxcpmAbsBase()
+      } catch (error) {
+        console.error('Health check skipped: unable to resolve client base URL', error)
+        return false
+      }
+
+      const response = await fetch(`${abs}/config`, { method: 'GET' })
       return response.ok
     } catch (error) {
       console.error('Health check failed:', error)
