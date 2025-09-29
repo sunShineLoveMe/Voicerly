@@ -1,7 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/use-auth"
 import { ArrowRight, Upload, Type, Download } from "lucide-react"
+import { useRouter } from "next/navigation"
 import React from "react"
 
 interface HeroSectionProps {
@@ -9,6 +11,14 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ language }: HeroSectionProps) {
+  const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  const handleCtaClick = () => {
+    if (isLoading) return
+    router.push("/signup")
+  }
+
   const content = {
     en: {
       title: "Voicerly",
@@ -43,10 +53,17 @@ export function HeroSection({ language }: HeroSectionProps) {
         <div className="text-center max-w-4xl mx-auto mb-20">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-balance mb-6 leading-tight">{title}</h1>
           <p className="text-xl text-muted-foreground text-pretty mb-8 leading-relaxed">{subtitle}</p>
-          <Button size="lg" className="text-lg px-8 py-6 h-auto">
-            {cta}
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          {!isAuthenticated && (
+            <Button
+              size="lg"
+              className="text-lg px-8 py-6 h-auto"
+              onClick={handleCtaClick}
+              disabled={isLoading}
+            >
+              {cta}
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          )}
         </div>
 
         <div className="text-center mb-12">
