@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   description:
     "Turn your words into voice, instantly. AI voice generation for bloggers, podcasters, and content creators.",
   generator: "dev by chris",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png" },
+    ],
+  },
 }
 
 export default function RootLayout({
