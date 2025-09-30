@@ -10,7 +10,13 @@
 export function getServerVoxcpmBase(): string {
   // 仅在 Node 环境使用
   const base = process.env.VOXCPM_BASE_URL
-  if (!base) throw new Error('VOXCPM_BASE_URL is not set')
+  if (!base) {
+    // 构建时使用占位符，运行时才检查
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('VOXCPM_BASE_URL is not set, using fallback')
+    }
+    return 'http://localhost:7860'  // 构建时fallback
+  }
   return base.replace(/\/+$/, '')
 }
 
