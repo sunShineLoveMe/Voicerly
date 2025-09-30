@@ -236,7 +236,7 @@ export class VoxCPMClient {
         filename,
         mimeType,
         size,
-        source: filepath,
+        source: rawFilename,
       }
     } catch (error) {
       console.error('Failed to download generated audio:', error)

@@ -153,13 +153,17 @@ NEXT_PUBLIC_DEBUG_MODE=1
 - **权限控制** - 管理员和认证用户的不同权限
 
 ### 🚀 API 路由 (已测试通过)
+
+#### 认证相关
+- `POST /api/password-signup` - 邮箱密码注册 ✅
+- `POST /api/password-login` - 邮箱密码登录 ✅
+- `POST /api/reset-password` - 重置密码（需验证码）✅
+- `POST /api/send-otp` - 发送邮箱验证码（Cloudflare Worker）✅
+- `POST /api/verify-otp` - 验证邮箱验证码（自动注册）✅
+
+#### 用户管理
 - `POST /api/admin/create-user` - 创建用户 ✅
 - `POST /api/auth/login` - 用户登录（旧版）✅
-- `POST /api/auth/signup` - 邮箱密码注册 ✅
-- `POST /api/auth/login-with-password` - 邮箱密码登录 ✅
-- `POST /api/auth/reset-password` - 重置密码 ✅
-- `POST /api/send-otp` - 发送邮箱验证码（Cloudflare Worker）✅
-- `POST /api/verify-otp` - 验证邮箱验证码（Cloudflare Worker）✅
 - `POST /api/rpc/grant-signup-bonus` - 发放注册奖励 ✅
 - `POST /api/rpc/deduct-credits` - 扣除积分 ✅
 - `POST /api/rpc/update-profile` - 更新用户资料 ✅
@@ -219,13 +223,29 @@ pnpm ts-node scripts/sb_e2e.ts
 - **Toast 组件集成** - 在根布局中添加 Toaster 组件
 - **登录状态管理** - 修复按钮加载状态和错误处理逻辑
 - **FAQ 内容更新** - 更新常见问题页面，确保信息准确性和及时性
-- **🆕 无密码登录系统** - 实现邮箱 + OTP 验证码登录/注册流程
-  - `/signup` - OTP 验证 + 密码设置双模式注册
-  - `/login` - OTP 登录 + 传统密码登录双选项
-  - `/forgot-password` - OTP 验证 + 密码重置流程
-  - 公用认证组件：EmailInput、PasswordInput、OtpInput、OtpSendButton、NameInput
-  - 后端 API：`/api/auth/signup`、`/api/auth/login-with-password`、`/api/auth/reset-password`
-  - Cloudflare Worker 集成：`/api/send-otp`、`/api/verify-otp`
+- **🆕 三条清晰认证路径** - 重构认证流程，简化用户体验
+  - **`/login`** - 双Tab登录：验证码登录（OTP）+ 密码登录
+  - **`/signup`** - 纯密码注册（邮箱+密码+姓名）
+  - **`/forgot-password`** - 两步重置：邮箱验证码 → 新密码
+  
+- **🛡️ 安全特性**
+  - 所有邮箱输入自动 `trim()` 和 `toLowerCase()`，修复 Resend 422 错误
+  - 密码规则：≥8位，必须包含字母+数字
+  - 验证码：6位数字，60秒冷却，防止频繁请求
+  - OTP 验证通过后自动注册（用户不存在时）
+  
+- **🎨 公用认证组件**
+  - `AuthSwitcher` - Tab切换器（支持URL参数 `?tab=otp|password`）
+  - `FormMessage` - 统一错误/成功提示
+  - `OtpLoginCard` - 验证码登录卡片
+  - `PasswordLoginCard` - 密码登录卡片
+  - `PasswordSignupCard` - 密码注册卡片
+  - `ResetPasswordCard` - 重置密码卡片
+  
+- **⚙️ 环境变量配置**
+  - `NEXT_PUBLIC_API_BASE` - Cloudflare Worker API 基地址
+  - `NEXT_PUBLIC_ENABLE_PASSWORD` - 是否启用密码登录（默认true）
+  - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` - Cloudflare Turnstile防刷（可选）
 
 #### 🎯 优化后的用户体验
 1. **访问 `/generate` 页面**：
