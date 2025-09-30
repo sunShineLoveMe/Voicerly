@@ -123,9 +123,10 @@ NEXT_PUBLIC_DEBUG_MODE=1
 ### 🗄️ 数据库结构 (已部署)
 - **profiles** - 用户资料表
   - `id` (uuid, 主键) - 用户ID
-  - `email` (text) - 邮箱地址
+  - `email` (text, UNIQUE) - 邮箱地址
   - `display_name` (text) - 显示名称
   - `credits` (int) - 积分余额
+  - `password_hash` (text) - 密码哈希（用于密码登录）
   - `created_at` (timestamptz) - 创建时间
 
 - **credit_transactions** - 积分交易记录
@@ -153,7 +154,12 @@ NEXT_PUBLIC_DEBUG_MODE=1
 
 ### 🚀 API 路由 (已测试通过)
 - `POST /api/admin/create-user` - 创建用户 ✅
-- `POST /api/auth/login` - 用户登录 ✅
+- `POST /api/auth/login` - 用户登录（旧版）✅
+- `POST /api/auth/signup` - 邮箱密码注册 ✅
+- `POST /api/auth/login-with-password` - 邮箱密码登录 ✅
+- `POST /api/auth/reset-password` - 重置密码 ✅
+- `POST /api/send-otp` - 发送邮箱验证码（Cloudflare Worker）✅
+- `POST /api/verify-otp` - 验证邮箱验证码（Cloudflare Worker）✅
 - `POST /api/rpc/grant-signup-bonus` - 发放注册奖励 ✅
 - `POST /api/rpc/deduct-credits` - 扣除积分 ✅
 - `POST /api/rpc/update-profile` - 更新用户资料 ✅
@@ -213,6 +219,13 @@ pnpm ts-node scripts/sb_e2e.ts
 - **Toast 组件集成** - 在根布局中添加 Toaster 组件
 - **登录状态管理** - 修复按钮加载状态和错误处理逻辑
 - **FAQ 内容更新** - 更新常见问题页面，确保信息准确性和及时性
+- **🆕 无密码登录系统** - 实现邮箱 + OTP 验证码登录/注册流程
+  - `/signup` - OTP 验证 + 密码设置双模式注册
+  - `/login` - OTP 登录 + 传统密码登录双选项
+  - `/forgot-password` - OTP 验证 + 密码重置流程
+  - 公用认证组件：EmailInput、PasswordInput、OtpInput、OtpSendButton、NameInput
+  - 后端 API：`/api/auth/signup`、`/api/auth/login-with-password`、`/api/auth/reset-password`
+  - Cloudflare Worker 集成：`/api/send-otp`、`/api/verify-otp`
 
 #### 🎯 优化后的用户体验
 1. **访问 `/generate` 页面**：
@@ -403,7 +416,14 @@ pnpm start
    - 访问 `https://voicerly.zhiyunllm.com`
    - 检查网络面板 `/api/*` 指向外部后端
    - 确认无 CORS 报错
-   - 测试登录/注册功能
+   - **测试无密码登录流程**：
+     - 访问 `/signup` 或 `/login`
+     - 输入邮箱 → 点击"发送验证码"
+     - 验证 Cloudflare Worker `/api/send-otp` 调用成功
+     - 输入收到的 6 位验证码 → 点击"验证并继续"
+     - 验证通过后，注册页面显示密码设置表单
+   - **测试邮箱密码登录**：在登录页输入邮箱+密码
+   - **测试忘记密码**：输入邮箱 → 验证码 → 新密码
    - 测试语音生成功能
 
 3. **代理验证**:
@@ -440,6 +460,7 @@ pnpm start
 - **集成指南**: `docs/supabase_integration_guide.md`
 - **API 示例**: `docs/supabase_examples_via_api.http`
 - **问题排查**: `docs/network_troubleshooting.md`
+- **数据库更新**: `docs/supabase_add_password_hash.sql` - 添加密码哈希字段
 
 ---
 

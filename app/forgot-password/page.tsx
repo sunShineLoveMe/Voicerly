@@ -6,102 +6,165 @@ import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Mail, ArrowLeft } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Loader2, ArrowLeft } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
 import { useToast } from "@/hooks/use-toast"
+import { postJson } from "@/lib/http"
+import { EmailInput } from "@/components/auth/email-input"
+import { OtpInput } from "@/components/auth/otp-input"
+import { OtpSendButton } from "@/components/auth/otp-send-button"
+import { PasswordInput } from "@/components/auth/password-input"
 import Link from "next/link"
+
+const TEXTS = {
+  en: {
+    title: "Forgot Password",
+    subtitle: "Enter your email address and we'll send you a verification code.",
+    verifyButton: "Verify & Continue",
+    resetButton: "Reset Password",
+    resetting: "Resetting...",
+    otpSent: "Code sent successfully. Please check your inbox.",
+    otpError: "Failed to send verification code.",
+    verifyError: "Verification failed, please try again.",
+    resetSuccess: "Password reset successful!",
+    resetError: "Failed to reset password.",
+    backToLogin: "Back to Login",
+    newPassword: "New Password",
+  },
+  zh: {
+    title: "忘记密码",
+    subtitle: "输入您的邮箱地址，我们将发送验证码。",
+    verifyButton: "验证并继续",
+    resetButton: "重置密码",
+    resetting: "重置中...",
+    otpSent: "验证码已发送，请查收邮件。",
+    otpError: "验证码发送失败，请稍后重试。",
+    verifyError: "验证失败，请检查验证码。",
+    resetSuccess: "密码重置成功！",
+    resetError: "密码重置失败。",
+    backToLogin: "返回登录",
+    newPassword: "新密码",
+  },
+}
 
 export default function ForgotPasswordPage() {
   const { language, setLanguage } = useLanguage()
   const { toast } = useToast()
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isEmailSent, setIsEmailSent] = useState(false)
+  const texts = TEXTS[language]
 
-  const content = {
-    en: {
-      title: "Forgot Password",
-      subtitle: "Enter your email address and we'll send you a link to reset your password.",
-      emailLabel: "Email Address",
-      emailPlaceholder: "Enter your email address",
-      sendButton: "Send Reset Link",
-      backToLogin: "Back to Login",
-      successTitle: "Check Your Email",
-      successMessage: "We've sent a password reset link to your email address.",
-      resendButton: "Resend Email"
-    },
-    zh: {
-      title: "忘记密码",
-      subtitle: "输入您的邮箱地址，我们将发送重置密码的链接。",
-      emailLabel: "邮箱地址",
-      emailPlaceholder: "请输入您的邮箱地址",
-      sendButton: "发送重置链接",
-      backToLogin: "返回登录",
-      successTitle: "请检查您的邮箱",
-      successMessage: "我们已向您的邮箱发送了密码重置链接。",
-      resendButton: "重新发送"
+  const [email, setEmail] = useState("")
+  const [code, setCode] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [isOtpVerified, setIsOtpVerified] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
+
+  const handleSendOtp = async () => {
+    const result = await postJson<{ ok: boolean; error?: string }>("/api/send-otp", { email })
+
+    if (!result.ok) {
+      toast({
+        title: texts.otpError,
+        description: result.error,
+        variant: "destructive",
+      })
+      throw new Error(result.error)
+    }
+
+    toast({ title: texts.otpSent })
+  }
+
+  const handleVerifyOtp = async () => {
+    if (code.length !== 6) return
+
+    setIsVerifying(true)
+    try {
+      const result = await postJson<{ ok: boolean; error?: string }>("/api/verify-otp", {
+        email,
+        code,
+      })
+
+      if (!result.ok) {
+        toast({
+          title: texts.verifyError,
+          description: result.error,
+          variant: "destructive",
+        })
+        return
+      }
+
+      setIsOtpVerified(true)
+      toast({
+        title: language === "en" ? "Verification successful" : "验证成功",
+        description:
+          language === "en"
+            ? "Please enter your new password."
+            : "请输入您的新密码。",
+      })
+    } catch (error: any) {
+      toast({
+        title: texts.verifyError,
+        description: error.message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsVerifying(false)
     }
   }
 
-  const currentContent = content[language]
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!email.trim()) {
+
+    if (!newPassword || newPassword.length < 8) {
       toast({
         title: language === "en" ? "Validation Error" : "验证错误",
-        description: language === "en" ? "Please enter your email address." : "请输入您的邮箱地址。",
+        description:
+          language === "en"
+            ? "Password must be at least 8 characters."
+            : "密码至少需要8个字符。",
         variant: "destructive",
       })
       return
     }
 
-    setIsLoading(true)
-    
+    setIsResetting(true)
     try {
-      // TODO: Implement actual password reset API call
-      // For now, simulate the API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      
-      setIsEmailSent(true)
-      toast({
-        title: currentContent.successTitle,
-        description: currentContent.successMessage,
-      })
-    } catch (error) {
-      toast({
-        title: language === "en" ? "Error" : "错误",
-        description: language === "en" ? "Failed to send reset email. Please try again." : "发送重置邮件失败，请重试。",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      const result = await postJson<{ ok: boolean; error?: string }>(
+        "/api/auth/reset-password",
+        {
+          email,
+          newPassword,
+        }
+      )
 
-  const handleResend = async () => {
-    setIsLoading(true)
-    
-    try {
-      // TODO: Implement actual resend API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
+      if (!result.ok) {
+        toast({
+          title: texts.resetError,
+          description: result.error,
+          variant: "destructive",
+        })
+        return
+      }
+
       toast({
-        title: language === "en" ? "Email Sent" : "邮件已发送",
-        description: language === "en" ? "Reset link sent again." : "重置链接已重新发送。",
+        title: texts.resetSuccess,
+        description:
+          language === "en"
+            ? "You can now log in with your new password."
+            : "您现在可以使用新密码登录。",
       })
-    } catch (error) {
+
+      router.push("/login")
+    } catch (error: any) {
       toast({
-        title: language === "en" ? "Error" : "错误",
-        description: language === "en" ? "Failed to resend email." : "重新发送失败。",
+        title: texts.resetError,
+        description: error.message,
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      setIsResetting(false)
     }
   }
 
@@ -113,72 +176,70 @@ export default function ForgotPasswordPage() {
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl font-bold">{currentContent.title}</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                {currentContent.subtitle}
-              </CardDescription>
+              <CardTitle className="text-2xl font-bold">{texts.title}</CardTitle>
+              <CardDescription>{texts.subtitle}</CardDescription>
             </CardHeader>
-            <CardContent>
-              {!isEmailSent ? (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{currentContent.emailLabel}</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder={currentContent.emailPlaceholder}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
+            <CardContent className="space-y-4">
+              {/* Step 1: Email + OTP Verification */}
+              {!isOtpVerified ? (
+                <>
+                  <EmailInput
+                    value={email}
+                    onChange={(val) => {
+                      setEmail(val)
+                      setCode("")
+                    }}
+                    language={language}
+                  />
+
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                    <div className="flex-1">
+                      <OtpInput value={code} onChange={setCode} language={language} />
                     </div>
+                    <OtpSendButton email={email} onSend={handleSendOtp} language={language} />
                   </div>
-                  
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {language === "en" ? "Sending..." : "发送中..."}
-                      </>
-                    ) : (
-                      currentContent.sendButton
-                    )}
+
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={handleVerifyOtp}
+                    disabled={code.length !== 6 || isVerifying}
+                  >
+                    {isVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {texts.verifyButton}
+                  </Button>
+                </>
+              ) : (
+                /* Step 2: Reset Password */
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <EmailInput value={email} onChange={() => {}} language={language} disabled />
+
+                  <PasswordInput
+                    value={newPassword}
+                    onChange={setNewPassword}
+                    language={language}
+                    label={texts.newPassword}
+                    showStrength={true}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={isResetting}>
+                    {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isResetting ? texts.resetting : texts.resetButton}
                   </Button>
                 </form>
-              ) : (
-                <div className="space-y-4 text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                    <Mail className="w-8 h-8 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">{currentContent.successTitle}</h3>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {currentContent.successMessage}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Button onClick={handleResend} variant="outline" className="w-full" disabled={isLoading}>
-                      {isLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                          {language === "en" ? "Sending..." : "发送中..."}
-                        </>
-                      ) : (
-                        currentContent.resendButton
-                      )}
-                    </Button>
-                    <Button asChild variant="ghost" className="w-full">
-                      <Link href="/login">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        {currentContent.backToLogin}
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
               )}
+
+              <Separator />
+
+              <div className="text-center">
+                <Link
+                  href="/login"
+                  className="text-sm text-primary hover:underline inline-flex items-center"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  {texts.backToLogin}
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>
