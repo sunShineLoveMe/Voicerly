@@ -135,17 +135,13 @@ export function OtpLoginCard({ language }: OtpLoginCardProps) {
 
     setIsVerifying(true)
     try {
-      const result = await postJson<{ ok: boolean; user?: any }>("/api/verify-otp", {
+      const result = await postJson<{ ok: boolean }>("/api/verify-otp", {
         email: trimmedEmail,
         code: trimmedCode,
       })
 
-      if (result.ok && result.user) {
-        login({
-          ...result.user,
-          access_token: "",
-        })
-        router.push("/account")
+      if (result.ok) {
+        router.push(`/signup?email=${encodeURIComponent(trimmedEmail)}`)
       }
     } catch (err: any) {
       setError(err.message || "Verification failed")

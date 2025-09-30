@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useLanguage } from "@/hooks/use-language"
 import { PasswordSignupCard } from "@/components/auth/password-signup-card"
+import { useSearchParams } from "next/navigation"
 
 const TEXTS = {
   en: {
@@ -22,6 +23,8 @@ const TEXTS = {
 export default function SignupPage() {
   const { language, setLanguage } = useLanguage()
   const texts = TEXTS[language]
+  const searchParams = useSearchParams()
+  const prefillEmail = searchParams?.get("email") ?? ""
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,7 +41,7 @@ export default function SignupPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <PasswordSignupCard language={language} />
+              <PasswordSignupCard language={language} defaultEmail={prefillEmail} />
             </CardContent>
           </Card>
         </div>

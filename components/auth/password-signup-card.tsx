@@ -13,6 +13,7 @@ import { FormMessage } from "./form-message"
 
 interface PasswordSignupCardProps {
   language: "en" | "zh"
+  defaultEmail?: string
 }
 
 const TEXTS = {
@@ -58,18 +59,22 @@ const TEXTS = {
   },
 }
 
-export function PasswordSignupCard({ language }: PasswordSignupCardProps) {
+export function PasswordSignupCard({ language, defaultEmail = "" }: PasswordSignupCardProps) {
   const texts = TEXTS[language]
   const router = useRouter()
   const { login } = useAuth()
 
   const [displayName, setDisplayName] = useState("")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(defaultEmail)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [code, setCode] = useState("")
+  const [isOtpSent, setIsOtpSent] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSendingOtp, setIsSendingOtp] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
   const [error, setError] = useState("")
 
   const validateEmail = (email: string) => {
@@ -81,6 +86,48 @@ export function PasswordSignupCard({ language }: PasswordSignupCardProps) {
     return password.length >= 8 && /[a-zA-Z]/.test(password) && /\d/.test(password)
   }
 
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
+
+  const handleSendOtp = async () => {
+    setError("")
+
+    const trimmedEmail = email.trim().toLowerCase()
+
+    if (!validateEmail(trimmedEmail)) {
+      setError(texts.invalidEmail)
+      return
+    }
+
+    if (cooldown > 0 || isSendingOtp) return
+
+    setIsSendingOtp(true)
+    try {
+      const result = await postJson<{ ok: boolean; error?: string }>("/api/send-otp", { email: trimmedEmail })
+      if (!result.ok) {
+        setError(result.error || "Failed to send verification code")
+        return
+      }
+      setIsOtpSent(true)
+      setCooldown(60)
+    } catch (err: any) {
+      setError(err.message || "Failed to send verification code")
+    } finally {
+      setIsSendingOtp(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -89,9 +136,20 @@ export function PasswordSignupCard({ language }: PasswordSignupCardProps) {
     const trimmedPassword = password.trim()
     const trimmedConfirmPassword = confirmPassword.trim()
     const trimmedName = displayName.trim()
+    const trimmedCode = code.trim()
 
     if (!validateEmail(trimmedEmail)) {
       setError(texts.invalidEmail)
+      return
+    }
+
+    if (!isOtpSent) {
+      setError(language === "en" ? "Please send verification code first" : "请先发送验证码")
+      return
+    }
+
+    if (trimmedCode.length !== 6 || !/\d{6}/.test(trimmedCode)) {
+      setError(language === "en" ? "Please enter a valid 6-digit code" : "请输入6位数字验证码")
       return
     }
 
@@ -116,14 +174,11 @@ export function PasswordSignupCard({ language }: PasswordSignupCardProps) {
         email: trimmedEmail,
         password: trimmedPassword,
         displayName: trimmedName || undefined,
+        code: trimmedCode,
       })
 
       if (result.ok && result.user) {
-        login({
-          ...result.user,
-          access_token: "",
-        })
-        router.push("/account")
+        router.push("/login?tab=password")
       }
     } catch (err: any) {
       setError(err.message || "Signup failed")
@@ -229,6 +284,38 @@ export function PasswordSignupCard({ language }: PasswordSignupCardProps) {
               <EyeOff className="h-4 w-4 text-muted-foreground" />
             ) : (
               <Eye className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-code" className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          {language === "en" ? "Verification Code" : "验证码"}
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="signup-code"
+            type="text"
+            placeholder={language === "en" ? "6-digit code" : "6位数字"}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            disabled={isLoading}
+            autoComplete="one-time-code"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSendOtp}
+            disabled={isSendingOtp || cooldown > 0 || isLoading}
+          >
+            {isSendingOtp ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : cooldown > 0 ? (
+              `${language === "en" ? "Resend" : "重新发送"}(${cooldown}s)`
+            ) : (
+              language === "en" ? "Send Code" : "发送验证码"
             )}
           </Button>
         </div>

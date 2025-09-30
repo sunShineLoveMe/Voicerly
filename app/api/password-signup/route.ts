@@ -9,11 +9,12 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, displayName } = await req.json()
+    const { email, password, displayName, code } = await req.json()
 
     // 参数校验 - 邮箱必须trim和小写
     const trimmedEmail = email?.trim().toLowerCase()
     const trimmedPassword = password?.trim()
+    const trimmedCode = code?.trim()
 
     if (!trimmedEmail || !trimmedPassword) {
       return NextResponse.json(
@@ -22,10 +23,24 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (!trimmedCode) {
+      return NextResponse.json(
+        { ok: false, error: "Verification code is required" },
+        { status: 400 }
+      )
+    }
+
     // 邮箱格式校验
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       return NextResponse.json(
         { ok: false, error: "Invalid email format" },
+        { status: 400 }
+      )
+    }
+
+    if (trimmedCode.length !== 6 || !/^\d{6}$/.test(trimmedCode)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid verification code" },
         { status: 400 }
       )
     }
@@ -42,6 +57,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { ok: false, error: "Password must contain letters and numbers" },
         { status: 400 }
+      )
+    }
+
+    // 验证邮件验证码
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE || ""
+    const verifyUrl = `${apiBase}/api/verify-otp`
+
+    const verifyResponse = await fetch(verifyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: trimmedEmail, code: trimmedCode }),
+    })
+
+    const verifyData = await verifyResponse.json().catch(() => ({ ok: false }))
+
+    if (!verifyResponse.ok || !verifyData?.ok) {
+      return NextResponse.json(
+        { ok: false, error: verifyData?.error || "Invalid or expired verification code" },
+        { status: 401 }
       )
     }
 
@@ -74,6 +110,7 @@ export async function POST(req: NextRequest) {
         email: trimmedEmail,
         password_hash: passwordHash,
         display_name: displayName?.trim() || null,
+        credits: 10,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -94,7 +131,7 @@ export async function POST(req: NextRequest) {
         id: data.id,
         email: data.email,
         display_name: data.display_name,
-        credits: data.credits || 0,
+        credits: data.credits ?? 10,
       },
     })
   } catch (error: any) {

@@ -36,28 +36,25 @@ pnpm install
 ### 场景 1: 邮箱验证码 + 密码注册
 
 #### 步骤：
-1. 访问 `/signup`
-2. 在 "Email Login" 卡片中：
-   - 输入邮箱：`test@example.com`
-   - 点击"发送验证码"（Send Code）
+1. 访问 `/signup`（如果从 OTP 登录跳转会携带 `?email=xxx`）
+2. 在注册卡片中：
+   - 输入姓名
+   - 输入邮箱（若已预填则无需修改）
+   - 点击"发送验证码"
    - 检查网络面板：`POST /api/send-otp` 应返回 `{ok: true}`
 3. 查收邮件，获取 6 位验证码
-4. 输入验证码，点击"验证并继续"（Verify & Continue）
-   - 检查网络面板：`POST /api/verify-otp` 应返回 `{ok: true}`
-5. 验证成功后，在 "Create Account" 卡片中：
-   - 姓名：`Test User`
-   - 邮箱：自动填充，不可编辑
-   - 密码：`testpass123`（至少 8 位）
-   - 点击"创建账户"（Create Account）
-6. 检查网络面板：
-   - `POST /api/auth/signup` → 创建用户
-   - `POST /api/auth/login-with-password` → 自动登录
-7. 成功后跳转到 `/account`
+4. 输入验证码
+5. 输入密码：`testpass123`（至少 8 位，含字母和数字）
+6. 点击"创建账户"（Create Account）
+7. 检查网络面板：
+   - `POST /api/password-signup` → 创建用户并校验验证码
+8. 成功后跳转到 `/login?tab=password`
 
 #### 预期结果：
-- ✅ Toast 提示"账户创建成功"
-- ✅ 自动登录并跳转到账户页
+- ✅ Toast 提示验证码发送成功
+- ✅ 注册完成后自动跳转到密码登录页
 - ✅ Supabase `profiles` 表中新增一条记录，包含 `password_hash`
+- ✅ 新用户默认 `credits = 10`
 
 ---
 
